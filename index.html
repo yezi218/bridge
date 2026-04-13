@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>水韵江苏 · 古桥文化数字大观</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Noto Serif SC", "Source Han Serif SC", "Segoe UI", "华文楷书", "Microsoft YaHei", serif;
+            background: #2a241e;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* 顶部导航栏 */
+        .global-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 3000;
+            background: rgba(28, 22, 18, 0.88);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(210, 175, 110, 0.6);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+            display: flex;
+            justify-content: center;
+            gap: 0.8rem;
+            padding: 0.6rem 1rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            background: rgba(210, 175, 110, 0.1);
+            border: 1px solid rgba(215, 180, 110, 0.5);
+            color: #fef0df;
+            font-size: 0.9rem;
+            font-weight: 600;
+            font-family: "Noto Serif SC", serif;
+            padding: 0.5rem 1.2rem;
+            border-radius: 48px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            letter-spacing: 1px;
+            backdrop-filter: blur(4px);
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+            white-space: nowrap;
+        }
+
+        .nav-btn i {
+            margin-right: 6px;
+            font-style: normal;
+        }
+
+        .nav-btn:hover {
+            background: rgba(210, 175, 110, 0.35);
+            transform: translateY(-2px);
+            border-color: #e6bc7e;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-btn.active {
+            background: #c79a5e;
+            border-color: #f5e2c1;
+            color: #2c241a;
+            text-shadow: none;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+        }
+
+        /* iframe 容器 */
+        .iframe-container {
+            position: fixed;
+            top: 70px;
+            left: 0;
+            width: 100%;
+            height: calc(100% - 70px);
+            background: #1f1913;
+            z-index: 10;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+            background: #fef5e8;
+        }
+
+        /* 响应式 */
+        @media (max-width: 780px) {
+            .global-nav {
+                gap: 0.5rem;
+                padding: 0.5rem 0.6rem;
+            }
+            .nav-btn {
+                font-size: 0.7rem;
+                padding: 0.35rem 0.8rem;
+            }
+            .iframe-container {
+                top: 58px;
+                height: calc(100% - 58px);
+            }
+        }
+
+        /* 加载提示（可选） */
+        .loading-tip {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.6);
+            color: #ffefcf;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            z-index: 99;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body>
+
+<div class="global-nav">
+    <button class="nav-btn active" data-page="page1">🏮 水韵江苏 · 古桥遗韵</button>
+    <button class="nav-btn" data-page="page2">🏛️ 古桥数字营造 · 辨识</button>
+    <button class="nav-btn" data-page="page3">📜 古桥诗韵 · 知识图谱</button>
+    <button class="nav-btn" data-page="page4">🎨 古桥探幽 · 画境寻踪</button>
+    <button class="nav-btn" data-page="page5">🏯 廊桥营造智慧 · 古建筑借鉴</button>
+</div>
+
+<div class="iframe-container">
+    <iframe id="mainIframe" src="时间轴 网页.html" title="古桥文化展示"></iframe>
+</div>
+<div class="loading-tip">✨ 江南古桥 · 千年画卷</div>
+
+<script>
+    (function() {
+        // 页面路由配置（请确保所有 .html 文件与当前文件在同一目录下）
+        const pageMap = {
+            page1: "时间轴 网页.html",    // 水韵江苏 · 古桥遗韵（首页视频+卡片+时间轴）
+            page2: "1.html",              // 古桥数字营造 · 辨识
+            page3: "网谱.html",           // 古桥诗韵 · 知识图谱
+            page4: "翻页.html",           // 古桥探幽 · 画境寻踪（翻页卡片）
+            page5: "2.html"               // 廊桥营造智慧 · 古建筑借鉴
+        };
+
+        const navBtns = document.querySelectorAll(".nav-btn");
+        const iframe = document.getElementById("mainIframe");
+
+        // 切换页面
+        function switchPage(pageId) {
+            const src = pageMap[pageId];
+            if (!src) return;
+            // 更新按钮激活样式
+            navBtns.forEach(btn => {
+                if (btn.getAttribute("data-page") === pageId) {
+                    btn.classList.add("active");
+                } else {
+                    btn.classList.remove("active");
+                }
+            });
+            // 切换 iframe 内容
+            iframe.src = src;
+        }
+
+        // 绑定点击事件
+        navBtns.forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                const pageId = btn.getAttribute("data-page");
+                if (pageId) switchPage(pageId);
+            });
+        });
+
+        // 默认加载 page1 (已由 iframe 初始 src 完成)
+        // 确保 iframe 加载后不会丢失样式
+        iframe.addEventListener("load", () => {
+            // 可选：添加淡入效果或控制台输出
+            iframe.style.opacity = "0";
+            setTimeout(() => { iframe.style.opacity = "1"; }, 30);
+            iframe.style.opacity = "1";
+        });
+        iframe.style.opacity = "1";
+    })();
+</script>
+</body>
+</html>
