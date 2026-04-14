@@ -1,0 +1,4027 @@
+<!DOCTYPE html>
+<!--
+  ╔══════════════════════════════════════════════════════════════╗
+  ║     水韵江苏 · 古桥文化数字大观  —  合并版.html              ║
+  ║                                                              ║
+  ║  使用方式：直接用浏览器打开本文件（需现代浏览器，如 Chrome   ║
+  ║  / Edge / Firefox 最新版）                                   ║
+  ║                                                              ║
+  ║  资源依赖：                                                  ║
+  ║  1. 外部 CDN（需联网）：                                     ║
+  ║     • ECharts 5.5.0 (cdn.jsdelivr.net)                      ║
+  ║     • Three.js 0.128.0 + 插件 (unpkg.com)                   ║
+  ║     • Noto Serif SC 字体 (fonts.googleapis.com)              ║
+  ║  2. 本地资源（必须与本文件放在同一目录下）：                 ║
+  ║     图片：越城桥.png、枫桥古.png、垂.png、玉带.png           ║
+  ║           背景2.jpg、宝带桥建模图.png、宝带桥实景.jpg        ║
+  ║           枫桥.png、枫桥实景.jpg、行春桥建模.jpg、青春桥.jpg ║
+  ║           以及各诗人头像图片文件                             ║
+  ║     视频：首页.mp4                                           ║
+  ║     3D模型：*.glb（宝带桥、枫桥、五亭桥、行春桥等）         ║
+  ║                                                              ║
+  ║  导航：顶部 5 个标签页，点击即可无刷新切换模块              ║
+  ╚══════════════════════════════════════════════════════════════╝
+-->
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>水韵江苏 · 古桥文化数字大观</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <!-- ECharts CDN — required by 水韵江苏 and 知识图谱 sections -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <!-- Three.js import map — required by 古桥辨识 and 廊桥营造 sections -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+        }
+    }
+    </script>
+    <style>
+/* ==============================================================
+   GLOBAL BASE
+============================================================== */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+    height: 100%; width: 100%;
+    overflow: hidden;
+    font-family: "Noto Serif SC", "Source Han Serif SC", "Microsoft YaHei", serif;
+    background: #2a241e;
+}
+
+/* ==============================================================
+   GLOBAL NAVIGATION BAR  (60 px tall)
+============================================================== */
+.global-nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    z-index: 9000;
+    background: rgba(28, 22, 18, 0.92);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(210, 175, 110, 0.6);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    display: flex; justify-content: center; align-items: center;
+    gap: 0.6rem; padding: 0.5rem 1rem;
+    flex-wrap: wrap; min-height: 60px;
+}
+.global-nav .nav-btn {
+    background: rgba(210, 175, 110, 0.1);
+    border: 1px solid rgba(215, 180, 110, 0.5);
+    color: #fef0df; font-size: 0.85rem; font-weight: 600;
+    font-family: "Noto Serif SC", serif;
+    padding: 0.42rem 1.05rem; border-radius: 48px; cursor: pointer;
+    transition: all 0.25s ease; letter-spacing: 0.5px;
+    backdrop-filter: blur(4px); text-shadow: 0 1px 1px rgba(0,0,0,0.3);
+    white-space: nowrap;
+}
+.global-nav .nav-btn:hover {
+    background: rgba(210, 175, 110, 0.35); transform: translateY(-2px);
+    border-color: #e6bc7e; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.global-nav .nav-btn.active {
+    background: #c79a5e; border-color: #f5e2c1;
+    color: #2c241a; text-shadow: none;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+}
+
+/* ==============================================================
+   PAGE SECTIONS
+============================================================== */
+.page-sec {
+    display: none;
+    position: fixed; top: 60px; left: 0; right: 0; bottom: 0;
+    overflow: hidden;
+}
+.page-sec.active { display: block; }
+
+/* Sections needing scroll */
+#sec-tl { overflow-y: auto; background: #1c1410; }
+#sec-fy { overflow-y: auto; }
+
+/* Three.js sections */
+#sec-s1 { background: radial-gradient(circle at center, #0f2a3a 0%, #020813 100%); }
+#sec-s2 { background: radial-gradient(circle at center, #0a1215 0%, #020a0f 100%); }
+
+/* Canvas containers fill their sections */
+#s1-canvas-container, #s2-canvas-container {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+}
+
+/* Shared toast style for Three.js sections */
+.three-toast {
+    position: absolute; bottom: 130px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(10, 20, 28, 0.92); border: 1px solid #e6b422;
+    color: #ffd88a; padding: 8px 22px; border-radius: 20px;
+    font-size: 0.8rem; z-index: 60; pointer-events: none;
+    max-width: 82%; text-align: center;
+    opacity: 0; transition: opacity 0.35s;
+    backdrop-filter: blur(8px); white-space: pre-wrap;
+}
+.three-toast.show { opacity: 1; }
+.three-toast.error { border-color: #ff6666; color: #ffaaaa; }
+#sec-s2 .three-toast { border-color: #4a9ab5; color: #a0d8e8; }
+#sec-s2 .three-toast.warn { border-color: #ffaa66; color: #ffcc88; }
+
+/* Force modals to use fixed positioning */
+#sec-s1 .modal, #sec-s2 .modal { position: fixed; z-index: 9500; }
+
+/* ==============================================================
+   RESPONSIVE NAV
+============================================================== */
+@media (max-width: 780px) {
+    .global-nav { gap: 0.3rem; padding: 0.35rem 0.4rem; min-height: 52px; }
+    .global-nav .nav-btn { font-size: 0.68rem; padding: 0.3rem 0.6rem; }
+    .page-sec { top: 52px; }
+}
+
+/* ==============================================================
+   SECTION 1: 水韵江苏·古桥遗韵  (时间轴 网页.html)
+   Contains sub-nav: 首页视频 / 桥梁卡片 / 时间轴
+============================================================== */
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --ink: #2b2118;
+      --gold: #c8a069;
+      --gold-deep: #9f7a4a;
+      --paper: #f8f1e5;
+      --paper-2: #efe3cf;
+      --line: #b08a58;
+      --bg-dark: #2a241e;
+    }
+    body {
+      font-family: "Noto Serif SC", "Source Han Serif SC", "SimSun", serif;
+      background-color: var(--bg-dark);
+      overflow-x: hidden;
+      color: #3b2a1d;
+    }
+
+    /* 导航 */
+    .nav-bar {
+      position: fixed;
+      top: 24px;
+      left: 28px;
+      z-index: 3000;
+      display: flex;
+      gap: 14px;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(12px);
+      padding: 10px 22px;
+      border-radius: 60px;
+      border: 1px solid rgba(220, 190, 130, 0.6);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    .tl-navbtn {
+      font-size: 1.02rem;
+      font-weight: 600;
+      color: #fef0df;
+      background: transparent;
+      border: none;
+      padding: 6px 16px;
+      border-radius: 40px;
+      cursor: pointer;
+      transition: all 0.25s;
+      letter-spacing: 1px;
+      font-family: "Noto Serif SC", serif;
+      text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+    }
+    .tl-navbtn.active {
+      background: #c9a87b;
+      color: #2c241a;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      text-shadow: none;
+    }
+    .tl-navbtn:hover:not(.active) {
+      background: rgba(200, 170, 120, 0.6);
+      transform: translateY(-2px);
+    }
+
+    .view { position: relative; transition: opacity 0.2s; }
+    .view-hidden { display: none; }
+
+    /* 首页视频 */
+    .hero-video-view {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      overflow: hidden;
+      background: #000;
+    }
+    #homeVideo {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+    }
+    .video-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      background: rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(3px);
+      padding: 20px;
+      pointer-events: auto;
+    }
+    .hero-title { margin-bottom: 32px; animation: fadeGlow 1s ease-out; }
+    .hero-title .main-art {
+      font-size: 3.8rem;
+      font-weight: 900;
+      letter-spacing: 8px;
+      background: linear-gradient(135deg, #f9e5b3, #ffd68a, #c98f4b);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+      margin-bottom: 12px;
+      line-height: 1.2;
+    }
+    .hero-title .sub-art {
+      font-size: 1.4rem;
+      color: #fff3e0;
+      background: rgba(0, 0, 0, 0.5);
+      display: inline-block;
+      backdrop-filter: blur(6px);
+      padding: 8px 28px;
+      border-radius: 60px;
+      letter-spacing: 2px;
+      font-style: italic;
+    }
+    .sound-control { margin: 20px 0; }
+    .sound-btn {
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(240, 210, 150, 0.9);
+      padding: 10px 28px;
+      border-radius: 50px;
+      font-size: 1rem;
+      font-weight: 500;
+      color: #ffefcf;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: "Noto Serif SC", serif;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .painting-caption {
+      margin-top: 18px;
+      font-size: 0.95rem;
+      color: #fef0db;
+      background: rgba(0,0,0,0.5);
+      display: inline-block;
+      padding: 6px 24px;
+      border-radius: 40px;
+      backdrop-filter: blur(4px);
+    }
+    @keyframes fadeGlow {
+      0% { opacity: 0; transform: scale(0.96); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    /* 卡片页 */
+    .cards-view {
+      position: relative;
+      z-index: 10;
+      min-height: 100vh;
+      background-image: url("./1.png");
+      background-size: cover;
+      background-position: center center;
+      background-attachment: fixed;
+      background-repeat: no-repeat;
+      background-color: #d9cdb0;
+      padding: 100px 28px 40px;
+    }
+    .cards-container { max-width: 1400px; margin: 0 auto; }
+    .title-section {
+      text-align: center;
+      margin-bottom: 28px;
+      border-bottom: 1px solid rgba(150, 130, 100, 0.3);
+      padding-bottom: 16px;
+    }
+    .title-section h1 {
+      font-size: 2.6rem;
+      color: #3e2e24;
+      letter-spacing: 6px;
+      text-shadow: 1px 1px 0 rgba(255,255,240,0.8);
+      font-weight: 500;
+    }
+    .title-section p {
+      color: #6f5a48;
+      font-size: 1rem;
+      margin-top: 8px;
+      font-style: italic;
+    }
+
+    .city-tags {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+    .city-tag {
+      background: rgba(232, 226, 214, 0.9);
+      padding: 8px 24px;
+      border-radius: 48px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #4b3a2c;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid #bcae98;
+    }
+    .city-tag.active { background: #6f5a48; color: #fef7e8; border-color: #4f3e2e; }
+    .city-tag:hover:not(.active) { background: #d6cdbf; transform: translateY(-2px); }
+
+    .stats-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+    .chart-box {
+      flex: 1;
+      min-width: 240px;
+      background: rgba(252, 250, 242, 0.85);
+      border-radius: 36px;
+      padding: 16px 12px;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.05);
+      border: 1px solid #e0d5c4;
+    }
+    .chart-box h3 {
+      text-align: center;
+      font-size: 1.2rem;
+      color: #4f3e2e;
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+    .chart-container { width: 100%; height: 280px; }
+
+    .bridges-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 24px;
+      margin-top: 20px;
+    }
+    .bridge-card {
+      background: rgba(255, 252, 242, 0.88);
+      backdrop-filter: blur(2px);
+      border-radius: 36px;
+      padding: 18px;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.05);
+      transition: all 0.25s ease;
+      border: 1px solid #e3d7c8;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+    }
+    .bridge-card:hover {
+      background: rgba(255, 254, 248, 0.96);
+      transform: translateY(-5px);
+      box-shadow: 0 18px 28px rgba(0,0,0,0.1);
+      border-color: #cbb99f;
+    }
+    .bridge-name {
+      font-size: 1.6rem;
+      font-weight: 600;
+      color: #4a3727;
+      border-left: 5px solid #b8865b;
+      padding-left: 14px;
+      margin-bottom: 12px;
+    }
+    .bridge-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 8px 0;
+    }
+    .badge {
+      background: #efe6db;
+      padding: 4px 14px;
+      border-radius: 40px;
+      font-size: 0.7rem;
+      color: #5e4a38;
+      font-weight: 500;
+    }
+    .story-preview {
+      font-size: 0.85rem;
+      color: #7a6652;
+      line-height: 1.45;
+      margin-top: 12px;
+      background: rgba(235, 225, 210, 0.4);
+      padding: 8px 10px;
+      border-radius: 20px;
+      flex: 1;
+    }
+    .detail-hint {
+      margin-top: 14px;
+      font-size: 0.7rem;
+      text-align: right;
+      color: #b2a086;
+      font-style: italic;
+    }
+    .footer {
+      margin-top: 40px;
+      text-align: center;
+      font-size: 0.7rem;
+      color: #7b6a56;
+      border-top: 1px solid rgba(150, 130, 100, 0.3);
+      padding-top: 20px;
+    }
+
+    /* 时间轴页 */
+    .timeline-view {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 15% 20%, rgba(240, 205, 145, 0.18) 0%, rgba(240,205,145,0) 42%),
+        radial-gradient(circle at 88% 76%, rgba(176, 123, 68, 0.2) 0%, rgba(176,123,68,0) 46%),
+        linear-gradient(160deg, #2a221a 0%, #3a2d1f 46%, #251e17 100%);
+      color: #f4e7ce;
+      position: relative;
+      overflow: hidden;
+    }
+    .timeline-view::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        repeating-linear-gradient(90deg, rgba(229, 196, 139, 0.05) 0px, rgba(229, 196, 139, 0.05) 1px, transparent 1px, transparent 44px),
+        repeating-linear-gradient(0deg, rgba(229, 196, 139, 0.03) 0px, rgba(229, 196, 139, 0.03) 1px, transparent 1px, transparent 44px);
+      pointer-events: none;
+    }
+
+    .timeline-sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 180px;
+      height: 100vh;
+      z-index: 21;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-right: 1px solid rgba(214, 176, 120, 0.28);
+      background: linear-gradient(180deg, rgba(25, 18, 12, 0.82), rgba(48, 34, 22, 0.72));
+      backdrop-filter: blur(6px);
+    }
+    .timeline-sidebar-title {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      letter-spacing: 8px;
+      font-size: 2.1rem;
+      font-weight: 800;
+      color: #f4dbb0;
+      text-shadow: 0 4px 12px rgba(0,0,0,0.45);
+      position: relative;
+    }
+    .timeline-sidebar-title::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      top: -26px;
+      width: 2px;
+      height: 20px;
+      background: #dfbd86;
+      box-shadow: 0 68vh 0 #dfbd86;
+      opacity: 0.8;
+    }
+
+    .timeline-main {
+      margin-left: 180px;
+      min-height: 100vh;
+      padding: 110px 26px 28px;
+      position: relative;
+      z-index: 20;
+    }
+
+    .timeline-story-panel {
+      background: linear-gradient(160deg, rgba(255, 246, 230, 0.96), rgba(241, 225, 193, 0.92));
+      border: 1px solid rgba(178, 138, 82, 0.78);
+      border-radius: 28px;
+      color: #332418;
+      box-shadow: 0 12px 26px rgba(0,0,0,0.25);
+      padding: 18px 20px;
+      margin-bottom: 22px;
+      transform-origin: top center;
+      animation: panelIn 0.35s ease;
+    }
+    @keyframes panelIn {
+      0% { transform: translateY(-10px) scale(0.98); opacity: 0; }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    .timeline-story-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .timeline-story-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #4a3118;
+    }
+    .timeline-story-meta {
+      font-size: 0.92rem;
+      color: #795a34;
+      background: rgba(214, 176, 120, 0.26);
+      border: 1px solid rgba(157, 117, 65, 0.45);
+      padding: 4px 12px;
+      border-radius: 999px;
+    }
+    .timeline-story-content {
+      line-height: 1.76;
+      max-height: 36vh;
+      overflow-y: auto;
+      padding-right: 8px;
+      font-size: 0.94rem;
+    }
+
+    .timeline-track-wrap {
+      position: relative;
+      margin-top: 12px;
+      border-radius: 24px;
+      padding: 28px 16px 16px;
+      background: linear-gradient(180deg, rgba(32, 24, 17, 0.65), rgba(52, 37, 24, 0.6));
+      border: 1px solid rgba(222, 184, 130, 0.2);
+    }
+
+    .timeline-scroll {
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-behavior: smooth;
+      padding: 10px 0 18px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .timeline-scroll::-webkit-scrollbar { height: 10px; }
+    .timeline-scroll::-webkit-scrollbar-track {
+      background: rgba(255,255,255,0.06);
+      border-radius: 999px;
+    }
+    .timeline-scroll::-webkit-scrollbar-thumb {
+      background: rgba(210, 165, 102, 0.62);
+      border-radius: 999px;
+    }
+
+    .timeline-line {
+      position: relative;
+      min-width: max-content;
+      padding: 34px 42px 10px;
+    }
+    .timeline-line::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 60px;
+      height: 3px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, #7f5e36, #d9b47b, #7f5e36);
+      box-shadow: 0 0 10px rgba(218, 176, 112, 0.45);
+    }
+
+    .timeline-items {
+      display: flex;
+      align-items: flex-start;
+      gap: 58px;
+      position: relative;
+      z-index: 2;
+      padding-right: 18px;
+    }
+    .timeline-item {
+      width: 190px;
+      flex: 0 0 190px;
+      text-align: center;
+      color: #e8d8bc;
+      user-select: none;
+    }
+    .timeline-node {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      margin: 0 auto 8px;
+      border: 2px solid #efce9c;
+      background: radial-gradient(circle at 30% 30%, #f6d6a7, #9f7645);
+      box-shadow: 0 0 0 0 rgba(239, 206, 156, 0.45);
+      cursor: pointer;
+      transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+      position: relative;
+    }
+    .timeline-node:hover { transform: scale(1.1); }
+    .timeline-item.active .timeline-node {
+      transform: scale(1.35);
+      border-color: #fff3df;
+      box-shadow: 0 0 0 10px rgba(239, 206, 156, 0.14), 0 0 22px rgba(239, 206, 156, 0.62);
+      animation: pulseNode 1.2s infinite ease-in-out;
+    }
+    @keyframes pulseNode {
+      0% { box-shadow: 0 0 0 0 rgba(239, 206, 156, 0.45), 0 0 18px rgba(239, 206, 156, 0.62); }
+      70% { box-shadow: 0 0 0 12px rgba(239, 206, 156, 0), 0 0 24px rgba(239, 206, 156, 0.35); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 206, 156, 0), 0 0 18px rgba(239, 206, 156, 0.62); }
+    }
+
+    .timeline-year {
+      font-size: 1rem;
+      color: #f7e3c1;
+      font-weight: 700;
+      letter-spacing: 1px;
+      margin-bottom: 2px;
+      cursor: pointer;
+    }
+    .timeline-dynasty {
+      font-size: 0.86rem;
+      color: #d4b78f;
+      margin-bottom: 9px;
+      min-height: 36px;
+      line-height: 1.3;
+      cursor: pointer;
+    }
+
+    .bridge-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+      min-height: 62px;
+      align-content: flex-start;
+    }
+    .bridge-link {
+      font-size: 0.74rem;
+      border: 1px solid rgba(226, 188, 131, 0.5);
+      color: #f2dfbe;
+      background: rgba(106, 77, 45, 0.35);
+      border-radius: 999px;
+      padding: 3px 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .bridge-link:hover {
+      background: rgba(205, 165, 104, 0.45);
+      color: #2f2015;
+      transform: translateY(-1px);
+    }
+    .bridge-link.active {
+      background: #d4a56a;
+      color: #2f1f12;
+      border-color: #f5dfba;
+      font-weight: 700;
+    }
+
+    .timeline-tip {
+      margin-top: 10px;
+      font-size: 0.8rem;
+      color: rgba(246, 227, 194, 0.76);
+      text-align: right;
+      padding-right: 4px;
+    }
+
+    /* 通用弹窗 */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background-color: rgba(40, 35, 28, 0.75);
+      backdrop-filter: blur(6px);
+      justify-content: center;
+      align-items: center;
+      z-index: 4000;
+    }
+    .modal-content {
+      background: #fffcf3;
+      max-width: 650px;
+      width: 90%;
+      max-height: 85vh;
+      overflow-y: auto;
+      border-radius: 52px;
+      padding: 28px 32px;
+      position: relative;
+      border: 1px solid #dacfb8;
+      box-shadow: 0 20px 35px rgba(0,0,0,0.2);
+    }
+    .modal-close {
+      position: absolute;
+      top: 18px;
+      right: 26px;
+      font-size: 28px;
+      cursor: pointer;
+      color: #9c8468;
+    }
+    .modal-story {
+      white-space: pre-wrap;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: #3e2e24;
+      margin-top: 12px;
+    }
+    .extra-info {
+      background: #f3efe7;
+      border-radius: 24px;
+      padding: 12px 16px;
+      margin: 16px 0 8px;
+      font-size: 0.8rem;
+    }
+
+    @media (max-width: 980px) {
+      .timeline-sidebar { width: 108px; }
+      .timeline-main { margin-left: 108px; padding: 96px 12px 20px; }
+      .timeline-sidebar-title { font-size: 1.52rem; letter-spacing: 4px; }
+      .timeline-item { width: 170px; flex-basis: 170px; }
+      .timeline-items { gap: 42px; }
+    }
+
+    @media (max-width: 700px) {
+      .nav-bar { top: 12px; left: 12px; padding: 6px 12px; gap: 8px; }
+      .tl-navbtn { font-size: 0.82rem; padding: 4px 10px; }
+      .hero-title .main-art { font-size: 2.2rem; letter-spacing: 4px; }
+      .cards-view { padding: 80px 16px 30px; }
+      .bridge-name { font-size: 1.3rem; }
+      .timeline-sidebar {
+        width: 100%;
+        height: 56px;
+        border-right: none;
+        border-bottom: 1px solid rgba(214, 176, 120, 0.28);
+        justify-content: flex-start;
+        padding-left: 16px;
+      }
+      .timeline-sidebar-title {
+        writing-mode: horizontal-tb;
+        letter-spacing: 3px;
+        font-size: 1.15rem;
+      }
+      .timeline-sidebar-title::after { display: none; }
+      .timeline-main {
+        margin-left: 0;
+        padding-top: 78px;
+      }
+      .timeline-story-content { max-height: 28vh; }
+    }
+  
+
+/* ==============================================================
+   SECTION 2: 古桥数字营造·辨识  (1.html — Three.js WebGL)
+============================================================== */
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", Roboto, "Noto Sans", sans-serif;
+        }
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background: radial-gradient(circle at center, #0f2a3a 0%, #020813 100%);
+            overflow: hidden;
+        }
+        /* 双栏控制区 */
+        .control-bar {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 40;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 16px;
+            pointer-events: none;
+        }
+        .bridge-switch-bar, .model-switch-bar {
+            pointer-events: auto;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(12px);
+            border-radius: 60px;
+            padding: 6px 12px;
+            display: flex;
+            gap: 12px;
+            border: 1px solid rgba(230, 180, 52, 0.6);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .bridge-btn, .model-btn {
+            background: rgba(20, 35, 45, 0.9);
+            border: none;
+            color: #e6d5b8;
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 6px 18px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: 0.2s;
+            letter-spacing: 1px;
+            font-family: inherit;
+        }
+        .bridge-btn.active, .model-btn.active {
+            background: #e6b422;
+            color: #1e2a2f;
+            box-shadow: 0 0 12px rgba(230, 180, 34, 0.6);
+        }
+        .bridge-btn:hover:not(.active), .model-btn:hover:not(.active) {
+            background: #e6b42280;
+            color: #fff0c0;
+        }
+        .model-switch-bar {
+            background: rgba(0, 0, 0, 0.55);
+            border-color: rgba(230, 180, 52, 0.4);
+        }
+        .info-panel {
+            position: absolute;
+            bottom: 24px;
+            left: 20px;
+            width: 360px;
+            background: rgba(10, 20, 28, 0.85);
+            backdrop-filter: blur(16px);
+            border-radius: 28px;
+            border-left: 5px solid #e6b422;
+            padding: 18px 22px;
+            color: #f2ecdf;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+            pointer-events: auto;
+            z-index: 20;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .info-panel h2 {
+            margin: 0 0 6px 0;
+            font-size: 1.6rem;
+            font-weight: 600;
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+        }
+        .info-panel h2 small {
+            font-size: 0.7rem;
+            background: #e6b42230;
+            padding: 2px 10px;
+            border-radius: 40px;
+            font-weight: normal;
+            color: #ffdf9c;
+        }
+        .info-sub {
+            font-size: 0.75rem;
+            color: #bdd4ff;
+            margin-bottom: 12px;
+            border-left: 2px solid #e6b422;
+            padding-left: 10px;
+        }
+        .speech-text {
+            margin: 12px 0;
+            font-size: 0.9rem;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+            max-height: 280px;
+            overflow-y: auto;
+        }
+        .right-bottom-single {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 25;
+            pointer-events: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 12px;
+        }
+        .custom-btn {
+            background: rgba(30, 40, 55, 0.9);
+            backdrop-filter: blur(8px);
+            border: 1px solid #e6b422;
+            color: #ffeaac;
+            padding: 8px 18px;
+            border-radius: 40px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+            min-width: 140px;
+        }
+        .custom-btn:hover {
+            background: #e6b422;
+            color: #1e2a2f;
+            transform: translateY(-2px);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            max-width: 85vw;
+            max-height: 85vh;
+            background: #1e2a2f;
+            border-radius: 28px;
+            padding: 20px;
+            border: 2px solid #e6b422;
+        }
+        .modal-content img {
+            max-width: 100%;
+            max-height: 70vh;
+            border-radius: 16px;
+        }
+        .modal-caption {
+            margin-top: 14px;
+            font-size: 14px;
+            color: #ffdf9c;
+            text-align: center;
+        }
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: #ffeaac;
+            font-size: 32px;
+            font-weight: bold;
+            cursor: pointer;
+            background: rgba(0, 0, 0, 0.5);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .close-modal:hover {
+            background: #e6b422;
+            color: #1e2a2f;
+        }
+        .status-tip {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.55);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            color: #ddd;
+            pointer-events: none;
+            z-index: 15;
+        }
+        .reset-view {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(30, 40, 55, 0.85);
+            backdrop-filter: blur(5px);
+            border: 1px solid #e6b422;
+            color: #ffeaac;
+            padding: 8px 18px;
+            border-radius: 30px;
+            font-size: 13px;
+            cursor: pointer;
+            z-index: 30;
+            pointer-events: auto;
+        }
+        .instruction {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            font-size: 11px;
+            color: #aaa;
+            background: rgba(0, 0, 0, 0.45);
+            padding: 4px 12px;
+            border-radius: 20px;
+            pointer-events: none;
+        }
+        /* 临时提示样式 */
+        .toast-message {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            border-left: 4px solid #e6b422;
+            padding: 12px 20px;
+            border-radius: 12px;
+            color: #f0ecd8;
+            font-size: 14px;
+            z-index: 200;
+            max-width: 320px;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        @media (max-width: 700px) {
+            .info-panel { width: 260px; }
+            .custom-btn { min-width: 120px; }
+            .bridge-btn, .model-btn { padding: 4px 12px; font-size: 0.75rem; }
+            .control-bar { gap: 8px; }
+            .toast-message { bottom: 80px; right: 16px; left: 16px; max-width: none; }
+        }
+    
+
+/* ==============================================================
+   SECTION 3: 古桥诗韵·知识图谱  (网谱.html — ECharts)
+============================================================== */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Noto Serif SC', '华文楷体', 'Microsoft YaHei', serif;
+            background: #2a1f18;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 动态背景层（默认平铺纹理） */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image: var(--bg-image, url('背景2.jpg'));
+            background-repeat: var(--bg-repeat, repeat);
+            background-position: center bottom;
+            background-attachment: fixed;
+            background-size: var(--bg-size, auto);
+            background-color: #2e241f;
+            opacity: 0.5;
+            z-index: -2;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        /* 诗人背景模式：头像居中完整显示（contain），露出完整人脸 */
+        body.poet-bg-active::before {
+            --bg-repeat: no-repeat;
+            --bg-size: contain;
+            background-position: center center;
+            opacity: 0.45;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 20% 40%, rgba(245, 230, 190, 0.18), rgba(180, 140, 90, 0.08));
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .app-container {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+            backdrop-filter: blur(0.8px);
+        }
+
+        .sidebar {
+            width: 320px;
+            background: rgba(55, 42, 32, 0.82);
+            backdrop-filter: blur(14px);
+            border-right: 1px solid #dec28b;
+            box-shadow: 8px 0 22px rgba(0, 0, 0, 0.25);
+            display: flex;
+            flex-direction: column;
+            overflow-y: hidden;
+            z-index: 10;
+        }
+
+        .sidebar-header {
+            padding: 1.8rem 1.2rem 1rem;
+            border-bottom: 1px solid #ecdbaa;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.7rem;
+            font-weight: 500;
+            letter-spacing: 4px;
+            color: #ffefcf;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-header h2::before {
+            content: "🌉";
+            font-size: 1.9rem;
+        }
+
+        .sidebar-header p {
+            font-size: 0.75rem;
+            color: #f9e5c2;
+            margin-top: 8px;
+            font-style: italic;
+            line-height: 1.45;
+        }
+
+        .sidebar-tools {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+            align-items: center;
+        }
+
+        .bridge-search {
+            flex: 1;
+            height: 36px;
+            border: 1px solid rgba(255, 239, 207, 0.28);
+            border-radius: 999px;
+            padding: 0 14px;
+            background: rgba(255, 250, 239, 0.14);
+            color: #fff4dd;
+            outline: none;
+            backdrop-filter: blur(10px);
+            transition: 0.2s ease;
+        }
+
+        .bridge-search::placeholder {
+            color: rgba(255, 239, 207, 0.72);
+        }
+
+        .bridge-search:focus {
+            border-color: #f0c57b;
+            box-shadow: 0 0 0 3px rgba(240, 197, 123, 0.16);
+            background: rgba(255, 250, 239, 0.2);
+        }
+
+        .reset-btn {
+            height: 36px;
+            padding: 0 14px;
+            border: 0;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #d9a65b, #b87435);
+            color: #fff8ec;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+            transition: transform 0.18s ease, filter 0.18s ease;
+            white-space: nowrap;
+        }
+
+        .reset-btn:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.05);
+        }
+
+        .sidebar-tabs {
+            display: flex;
+            padding: 10px 12px 0;
+            gap: 6px;
+            background: rgba(30, 20, 15, 0.4);
+            flex-shrink: 0;
+            border-bottom: 2px solid #a37c4d;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px 0;
+            background: rgba(255, 239, 207, 0.08);
+            border: none;
+            border-radius: 8px 8px 0 0;
+            color: #e5cd9e;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255, 239, 207, 0.15);
+            color: #fff;
+        }
+
+        .tab-btn.active {
+            background: #a37c4d;
+            color: #fffcf0;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+        }
+
+        .list-container {
+            flex: 1;
+            padding: 1.2rem 0.8rem 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.7rem;
+            overflow-y: auto;
+        }
+
+        .list-container.hidden {
+            display: none;
+        }
+
+        .list-item-card {
+            background: rgba(252, 246, 233, 0.88);
+            backdrop-filter: blur(4px);
+            border-radius: 48px 12px 48px 12px;
+            padding: 0.7rem 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-left: 6px solid #cfa46b;
+            font-weight: 500;
+            color: #412f1e;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        .list-item-card:hover {
+            background: #fff6e6;
+            transform: translateX(5px);
+            border-left-color: #d9822b;
+        }
+
+        .list-item-card.active {
+            background: #f3e5ce;
+            border-left: 8px solid #bd6b24;
+            color: #2c1d0e;
+            font-weight: 700;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .list-item-card.hidden {
+            display: none;
+        }
+
+        .item-icon {
+            font-size: 1.5rem;
+        }
+
+        .item-name {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .graph-container {
+            flex: 1;
+            position: relative;
+            background: rgba(245, 240, 225, 0.08);
+            overflow: hidden;
+        }
+
+        .graph-header {
+            padding: 0.6rem 2rem;
+            background: rgba(20, 15, 10, 0.55);
+            color: #fff3e0;
+            font-size: 0.85rem;
+            backdrop-filter: blur(6px);
+            text-align: center;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #dbbd82;
+            position: relative;
+        }
+
+        #chart {
+            width: 100%;
+            height: calc(100% - 46px);
+        }
+
+        .graph-actions {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 8px;
+        }
+
+        .graph-action {
+            border: 1px solid rgba(255, 239, 207, 0.22);
+            background: rgba(255, 248, 235, 0.12);
+            color: #fff4dd;
+            border-radius: 999px;
+            padding: 7px 12px;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            transition: 0.18s ease;
+        }
+
+        .graph-action:hover {
+            background: rgba(255, 248, 235, 0.2);
+        }
+
+        .info-card {
+            position: fixed;
+            bottom: 35px;
+            right: 35px;
+            width: 410px;
+            max-height: 75vh;
+            overflow-y: auto;
+            background: #fffcf0f5;
+            backdrop-filter: blur(20px);
+            border-radius: 32px 10px 32px 10px;
+            box-shadow: 0 25px 40px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px #f0ddb6;
+            padding: 1.3rem 1.6rem;
+            z-index: 200;
+            transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            border-left: 8px solid #c9813e;
+            opacity: 0;
+            transform: translateY(28px) scale(0.96);
+            visibility: hidden;
+            pointer-events: auto;
+            font-size: 0.94rem;
+            line-height: 1.55;
+        }
+
+        .info-card.show {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            visibility: visible;
+        }
+
+        .card-close {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            background: #ecdbba;
+            border: none;
+            border-radius: 40px;
+            width: 30px;
+            height: 30px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #825e2c;
+            transition: 0.2s;
+            z-index: 10;
+        }
+
+        .card-close:hover {
+            background: #d6b67c;
+            color: #2f210e;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .poet-avatar-frame {
+            width: 92px;
+            height: 92px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 3px solid #e7bf86;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+            flex: 0 0 auto;
+            background: #f4e8d6;
+        }
+
+        .poet-avatar-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center center;
+            display: block;
+        }
+
+        .card-title-wrap {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .card-title {
+            font-size: 1.65rem;
+            font-weight: 800;
+            color: #3a2819;
+            letter-spacing: 2px;
+        }
+
+        .card-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 5px;
+            padding: 5px 10px;
+            border-radius: 999px;
+            background: rgba(194, 132, 61, 0.12);
+            color: #a5662b;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .card-sub {
+            font-size: 0.8rem;
+            color: #bb7a3a;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .card-content {
+            border-top: 1px dashed #e2cfaa;
+            padding-top: 14px;
+            color: #4f3822;
+        }
+
+        .poem-full {
+            white-space: pre-line;
+            font-family: 'Noto Serif SC', '楷体', serif;
+            background: #fff7ea;
+            padding: 12px 14px;
+            border-radius: 20px;
+            margin: 12px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+            border-left: 3px solid #ce9a5a;
+        }
+
+        .poet-bio {
+            margin-top: 8px;
+            background: #fef5e6;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .hover-tip {
+            position: absolute;
+            top: 60px;
+            right: 18px;
+            width: min(320px, calc(100% - 36px));
+            padding: 12px 14px;
+            background: rgba(255, 250, 241, 0.96);
+            border: 1px solid rgba(201, 129, 62, 0.3);
+            border-radius: 22px;
+            box-shadow: 0 18px 34px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(14px);
+            color: #4a3320;
+            opacity: 0;
+            transform: translateY(-8px);
+            pointer-events: none;
+            transition: 0.2s ease;
+            z-index: 100;
+            font-size: 0.85rem;
+            line-height: 1.45;
+        }
+
+        .hover-tip.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .hover-tip .hover-title {
+            font-weight: 800;
+            font-size: 1rem;
+            margin-bottom: 4px;
+            color: #2f2014;
+        }
+
+        .hover-tip .hover-sub {
+            font-size: 0.75rem;
+            color: #9e6a38;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .hover-tip .hover-body {
+            font-size: 0.82rem;
+            line-height: 1.5;
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #e7dbbc;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #b47c48;
+            border-radius: 10px;
+        }
+
+        @media (max-width: 760px) {
+            .sidebar { width: 240px; }
+            .info-card { width: 280px; right: 12px; bottom: 12px; padding: 1rem; }
+            .card-title { font-size: 1.3rem; }
+            .poet-avatar-frame { width: 64px; height: 64px; }
+            .graph-actions { display: none; }
+        }
+    
+
+/* ==============================================================
+   SECTION 4: 古桥探幽·画境寻踪  (翻页.html — flip cards)
+============================================================== */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none; /* 提升卡片质感，不影响文字复制 */
+        }
+
+        body {
+            font-family: 'Noto Serif SC', '华文楷书', 'Source Han Serif SC', serif;
+            min-height: 100vh;
+            background: #2b241c;
+            transition: background-image 0.5s cubic-bezier(0.23, 1, 0.32, 1), background-color 0.3s;
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            position: relative;
+        }
+
+        /* 默认背景：宣纸纹理 */
+        body.default-bg {
+            background-image: radial-gradient(circle at 30% 40%, rgba(210, 180, 130, 0.15) 2%, transparent 2.5%),
+                              radial-gradient(circle at 70% 85%, rgba(160, 120, 70, 0.12) 1.5%, transparent 2%);
+            background-size: 42px 42px, 56px 56px;
+            background-color: #efe3cf;
+        }
+
+        /* 全局遮罩层，让文字更清晰 */
+        .overlay-mist {
+            position: fixed;
+            inset: 0;
+            background: rgba(20, 15, 10, 0.28);
+            backdrop-filter: blur(3px);
+            pointer-events: none;
+            z-index: 1;
+            transition: opacity 0.4s;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem 2rem 3rem;
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 顶部标题区 */
+        .hero {
+            text-align: center;
+            margin-bottom: 3rem;
+            transition: all 0.3s;
+        }
+        .hero h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #2e2a1f;
+            text-shadow: 3px 3px 8px rgba(0,0,0,0.1), 1px 1px 0 #fff2db;
+            letter-spacing: 6px;
+            background: linear-gradient(145deg, #4f3f2a, #7a5c38);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+        .hero p {
+            font-size: 0.9rem;
+            color: #4f3e2c;
+            border-top: 1px solid #cdb28b;
+            display: inline-block;
+            padding-top: 0.5rem;
+            font-style: italic;
+        }
+
+        /* 卡片网格 */
+        .cards-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2rem;
+            transition: all 0.4s ease;
+        }
+        .cards-grid.hidden {
+            display: none;
+        }
+
+        /* 卡片样式 (简洁现代古风) */
+        .card {
+            width: 280px;
+            height: 380px;
+            background: rgba(255, 252, 240, 0.96);
+            backdrop-filter: blur(4px);
+            border-radius: 32px;
+            box-shadow: 0 18px 28px -10px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            transition: transform 0.25s ease, box-shadow 0.2s;
+            border: 1px solid #e0cca8;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 22px 32px -12px rgba(0, 0, 0, 0.4);
+        }
+        .card-icon {
+            font-size: 4rem;
+            text-align: center;
+            padding-top: 2rem;
+        }
+        .card-name {
+            font-size: 1.9rem;
+            font-weight: 800;
+            color: #745d3a;
+            text-align: center;
+            letter-spacing: 4px;
+            margin: 1rem 0 0.5rem;
+        }
+        .card-sub {
+            text-align: center;
+            color: #b48a56;
+            font-size: 0.75rem;
+            font-style: italic;
+            padding: 0 1rem;
+        }
+        .card-poem {
+            flex: 1;
+            font-size: 0.8rem;
+            color: #7a623f;
+            padding: 1rem;
+            text-align: center;
+            border-top: 1px dashed #e5d2b0;
+            margin-top: 0.8rem;
+            font-style: normal;
+        }
+        .flip-hint {
+            position: absolute;
+            bottom: 16px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 0.65rem;
+            color: #be9a6b;
+            background: rgba(235, 220, 190, 0.5);
+            padding: 4px;
+            border-radius: 20px;
+            width: 80%;
+            margin: 0 auto;
+        }
+
+        /* 展开卡片 (左侧大卡片) */
+        .expanded-card {
+            position: fixed;
+            left: 40px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 380px;
+            max-width: calc(100% - 80px);
+            background: rgba(255, 250, 240, 0.96);
+            backdrop-filter: blur(8px);
+            border-radius: 48px 24px 48px 24px;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.4), 0 0 0 1px #e9cfaa;
+            z-index: 200;
+            padding: 1.6rem 1.8rem;
+            transition: all 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.2);
+            border-left: 12px solid #c69048;
+            display: none;
+        }
+        .expanded-card.show {
+            display: block;
+            animation: slideInLeft 0.5s ease-out;
+        }
+        @keyframes slideInLeft {
+            0% {
+                opacity: 0;
+                transform: translateY(-50%) translateX(-80px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(-50%) translateX(0);
+            }
+        }
+        .expanded-card h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #4d351b;
+            letter-spacing: 2px;
+            border-left: 5px solid #e2b072;
+            padding-left: 15px;
+            margin-bottom: 0.5rem;
+        }
+        .expanded-card .subhead {
+            color: #ac7c46;
+            font-size: 0.75rem;
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 12px;
+            border-bottom: 1px dashed #e6cfaa;
+            padding-bottom: 8px;
+        }
+        .expanded-desc {
+            font-size: 0.9rem;
+            line-height: 1.65;
+            color: #3f2d1b;
+            margin: 1rem 0;
+            max-height: 50vh;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+        .expanded-desc p {
+            margin-bottom: 0.8rem;
+        }
+        .poem-line {
+            background: #f7efdf;
+            padding: 0.6rem 1rem;
+            border-radius: 28px;
+            font-style: italic;
+            color: #976b38;
+            margin: 1rem 0;
+            font-size: 0.85rem;
+            border-left: 3px solid #d2a064;
+        }
+        .return-btn {
+            background: #c8a16e;
+            border: none;
+            color: #2f2419;
+            font-weight: 700;
+            padding: 8px 24px;
+            border-radius: 48px;
+            margin-top: 1.2rem;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: inherit;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            width: 100%;
+            text-align: center;
+        }
+        .return-btn:hover {
+            background: #dbb072;
+            transform: translateY(-2px);
+        }
+
+        /* 返回按钮 + 装饰 */
+        .back-home-btn {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            background: rgba(45, 35, 25, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid #efd0a0;
+            color: #ffefcf;
+            padding: 10px 22px;
+            border-radius: 60px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            z-index: 220;
+            transition: all 0.2s;
+            display: none;
+        }
+        .back-home-btn.show {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .back-home-btn:hover {
+            background: #c79757;
+            color: #2d1f10;
+        }
+
+        /* 响应式 */
+        @media (max-width: 760px) {
+            .container {
+                padding: 1.5rem;
+            }
+            .card {
+                width: 260px;
+                height: 360px;
+            }
+            .expanded-card {
+                left: 20px;
+                right: 20px;
+                width: auto;
+                max-width: none;
+                top: auto;
+                transform: translateY(0);
+                bottom: 20px;
+                top: 20px;
+                overflow-y: auto;
+            }
+            @keyframes slideInLeft {
+                0% { opacity: 0; transform: translateX(-40px); }
+                100% { opacity: 1; transform: translateX(0); }
+            }
+            .expanded-card.show {
+                transform: translateY(0);
+                animation: slideInLeft 0.4s ease-out;
+            }
+            .hero h1 {
+                font-size: 1.8rem;
+            }
+        }
+
+        footer {
+            margin-top: 2rem;
+            text-align: center;
+            font-size: 0.7rem;
+            color: #816e50;
+        }
+    
+
+/* ==============================================================
+   SECTION 5: 廊桥营造智慧·古建筑借鉴  (2.html — Three.js WebGL)
+============================================================== */
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", Roboto, "Noto Sans", sans-serif;
+        }
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background: radial-gradient(circle at center, #1a2a2a 0%, #0a1215 100%);
+            overflow: hidden;
+        }
+        /* 顶部控制栏 */
+        .control-bar {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 40;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 16px;
+            pointer-events: none;
+        }
+        .source-switch-bar {
+            pointer-events: auto;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(12px);
+            border-radius: 60px;
+            padding: 6px 12px;
+            display: flex;
+            gap: 12px;
+            border: 1px solid rgba(200, 160, 80, 0.6);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .source-btn {
+            background: rgba(20, 35, 45, 0.9);
+            border: none;
+            color: #e6d5b8;
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 6px 18px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: 0.2s;
+            letter-spacing: 1px;
+            font-family: inherit;
+        }
+        .source-btn.active {
+            background: #c8943e;
+            color: #1e2a2f;
+            box-shadow: 0 0 12px rgba(200, 148, 62, 0.6);
+        }
+        .source-btn:hover:not(.active) {
+            background: #c8943e80;
+            color: #fff0c0;
+        }
+        /* 子切换栏 (仅斗拱模式下显示) */
+        .sub-switch-bar {
+            pointer-events: auto;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(12px);
+            border-radius: 60px;
+            padding: 4px 10px;
+            display: none;
+            gap: 8px;
+            border: 1px solid rgba(200, 160, 80, 0.5);
+            margin-left: 8px;
+        }
+        .sub-switch-bar.visible {
+            display: flex;
+        }
+        .sub-btn {
+            background: rgba(20, 35, 45, 0.85);
+            border: none;
+            color: #e6d5b8;
+            font-size: 0.8rem;
+            font-weight: 500;
+            padding: 4px 14px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .sub-btn.active {
+            background: #c8943e;
+            color: #1e2a2f;
+        }
+        .sub-btn:hover:not(.active) {
+            background: #c8943e80;
+        }
+        /* 信息面板 */
+        .info-panel {
+            position: absolute;
+            bottom: 24px;
+            left: 20px;
+            width: 380px;
+            background: rgba(10, 20, 28, 0.88);
+            backdrop-filter: blur(16px);
+            border-radius: 28px;
+            border-left: 5px solid #c8943e;
+            padding: 18px 22px;
+            color: #f2ecdf;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+            pointer-events: auto;
+            z-index: 20;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .info-panel h2 {
+            margin: 0 0 6px 0;
+            font-size: 1.6rem;
+            font-weight: 600;
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+        }
+        .info-panel h2 small {
+            font-size: 0.7rem;
+            background: #c8943e30;
+            padding: 2px 10px;
+            border-radius: 40px;
+            font-weight: normal;
+            color: #ffdf9c;
+        }
+        .info-sub {
+            font-size: 0.75rem;
+            color: #bdd4ff;
+            margin-bottom: 12px;
+            border-left: 2px solid #c8943e;
+            padding-left: 10px;
+        }
+        .speech-text {
+            margin: 12px 0;
+            font-size: 0.9rem;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+            max-height: 320px;
+            overflow-y: auto;
+        }
+        .click-hint {
+            font-size: 0.75rem;
+            color: #c8943e;
+            margin-top: 8px;
+            border-top: 1px solid rgba(200, 148, 62, 0.3);
+            padding-top: 8px;
+        }
+        .right-bottom-single {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 25;
+            pointer-events: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 12px;
+        }
+        .custom-btn {
+            background: rgba(30, 40, 55, 0.9);
+            backdrop-filter: blur(8px);
+            border: 1px solid #c8943e;
+            color: #ffeaac;
+            padding: 8px 18px;
+            border-radius: 40px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+            min-width: 140px;
+        }
+        .custom-btn:hover {
+            background: #c8943e;
+            color: #1e2a2f;
+            transform: translateY(-2px);
+        }
+        .status-tip {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.55);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            color: #ddd;
+            pointer-events: none;
+            z-index: 15;
+        }
+        .reset-view {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(30, 40, 55, 0.85);
+            backdrop-filter: blur(5px);
+            border: 1px solid #c8943e;
+            color: #ffeaac;
+            padding: 8px 18px;
+            border-radius: 30px;
+            font-size: 13px;
+            cursor: pointer;
+            z-index: 30;
+            pointer-events: auto;
+        }
+        .instruction {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            font-size: 11px;
+            color: #aaa;
+            background: rgba(0, 0, 0, 0.45);
+            padding: 4px 12px;
+            border-radius: 20px;
+            pointer-events: none;
+        }
+        .toast-message {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            border-left: 4px solid #c8943e;
+            padding: 10px 18px;
+            border-radius: 12px;
+            color: #f0ecd8;
+            font-size: 13px;
+            z-index: 200;
+            max-width: 300px;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        @media (max-width: 700px) {
+            .info-panel { width: 260px; bottom: 12px; left: 12px; padding: 12px 16px; }
+            .custom-btn { min-width: 110px; font-size: 11px; }
+            .source-btn { padding: 4px 12px; font-size: 0.75rem; }
+            .sub-btn { padding: 3px 10px; font-size: 0.7rem; }
+            .control-bar { gap: 8px; top: 12px; }
+            .reset-view { top: 12px; right: 12px; padding: 5px 12px; font-size: 11px; }
+        }
+    
+
+    </style>
+</head>
+<body>
+
+<!-- ============================================================
+     GLOBAL NAVIGATION
+============================================================ -->
+<nav class="global-nav">
+    <button class="nav-btn active" data-sec="sec-tl">🏮 水韵江苏 · 古桥遗韵</button>
+    <button class="nav-btn" data-sec="sec-s1">🏛️ 古桥数字营造 · 辨识</button>
+    <button class="nav-btn" data-sec="sec-wp">📜 古桥诗韵 · 知识图谱</button>
+    <button class="nav-btn" data-sec="sec-fy">🎨 古桥探幽 · 画境寻踪</button>
+    <button class="nav-btn" data-sec="sec-s2">🏯 廊桥营造智慧 · 古建筑借鉴</button>
+</nav>
+
+<!-- ============================================================
+     SECTION 1: 水韵江苏·古桥遗韵
+     Sub-views: 首页视频  |  桥梁卡片  |  时间轴
+============================================================ -->
+<div id="sec-tl" class="page-sec active">
+<div class="nav-bar">
+  <button class="tl-navbtn" id="navHomeBtn">🏮 首页 · 盛世画卷</button>
+  <button class="tl-navbtn" id="navCardsBtn">🌉 桥梁卡片 · 古桥遗韵</button>
+  <button class="tl-navbtn" id="navTimelineBtn">🧭 时间轴 · 桥梁历史</button>
+</div>
+
+<!-- 首页 -->
+<div id="homeView" class="hero-video-view view">
+  <video id="homeVideo" autoplay muted loop playsinline preload="auto">
+    <source src="./首页.mp4" type="video/mp4" />
+    您的浏览器不支持 video 标签。
+  </video>
+  <div class="video-overlay">
+    <div class="hero-title">
+      <div class="main-art">水韵江苏 · 古桥遗韵</div>
+      <div class="sub-art">江苏省古代桥梁数据可视化与文化图谱</div>
+    </div>
+    <div class="sound-control">
+      <button id="soundToggleBtn" class="sound-btn">🔇 开启声音 · 聆听江南</button>
+    </div>
+    <div class="painting-caption">✨ 盛世画卷 · 烟雨楼台 千年桥影 徐徐展开</div>
+  </div>
+</div>
+
+<!-- 卡片页 -->
+<div id="cardsView" class="cards-view view view-hidden">
+  <div class="cards-container">
+    <div class="title-section">
+      <h1>🌉 水韵江苏 · 古桥遗韵</h1>
+      <p>江苏省古代桥梁文化图谱 | 外框透明 · 米色卡片</p>
+    </div>
+    <div class="city-tags" id="cityTags"></div>
+    <div class="stats-row">
+      <div class="chart-box"><h3>📊 各朝代古桥数量</h3><div id="dynastyChart" class="chart-container"></div></div>
+      <div class="chart-box"><h3 id="rightChartTitle">🥧 各城市古桥占比</h3><div id="cityPieChart" class="chart-container"></div></div>
+    </div>
+    <div id="bridgesContainer" class="bridges-grid"></div>
+    <div class="footer">数据来源：江苏省地名文化遗产名录、方志及文献 | 人文故事基于桥梁终.xlsx整理</div>
+  </div>
+</div>
+
+<!-- 时间轴页 -->
+<div id="timelineView" class="timeline-view view view-hidden">
+  <aside class="timeline-sidebar"><div class="timeline-sidebar-title">桥梁历史</div></aside>
+  <main class="timeline-main">
+    <section id="timelineStoryPanel" class="timeline-story-panel">
+      <div class="timeline-story-top"><div class="timeline-story-title">请选择一个朝代或桥梁节点</div><div class="timeline-story-meta">交互时间轴</div></div>
+      <div class="timeline-story-content">点击时间轴上的年份节点或桥梁名，即可在这里弹出对应历史故事。</div>
+    </section>
+    <section class="timeline-track-wrap">
+      <div id="timelineScroll" class="timeline-scroll"><div class="timeline-line"><div id="timelineItems" class="timeline-items"></div></div></div>
+      <div class="timeline-tip">支持横向滑动切换时间点 | 点击节点高亮并伴随音效</div>
+    </section>
+  </main>
+</div>
+
+<!-- 弹窗 -->
+<div id="bridgeModal" class="modal"><div class="modal-content"><span class="modal-close" id="closeModal">&times;</span><div id="modalBody"></div></div></div>
+</div>
+
+<!-- ============================================================
+     SECTION 2: 古桥数字营造·辨识  (Three.js 3D)
+     GLB models: 宝带桥 / 枫桥 / 五亭桥 / 行春桥
+============================================================ -->
+<div id="sec-s1" class="page-sec">
+<div id="s1-canvas-container"></div>
+
+<div class="control-bar">
+    <div class="bridge-switch-bar">
+        <button id="btn-baodai" class="bridge-btn active">🌉 宝带桥</button>
+        <button id="btn-fengqiao" class="bridge-btn">🍁 枫桥</button>
+        <button id="btn-wuting" class="bridge-btn">🏯 五亭桥</button>
+        <button id="btn-xingchun" class="bridge-btn">🌿 行春桥</button>
+    </div>
+    <div class="model-switch-bar" id="s1-modelSwitchBar">
+        <button class="model-btn" data-model-index="0">📌 候选 A</button>
+        <button class="model-btn" data-model-index="1">📌 候选 B</button>
+        <button class="model-btn" data-model-index="2">📌 候选 C</button>
+        <button class="model-btn" data-model-index="3">📌 候选 D</button>
+    </div>
+</div>
+
+<div class="info-panel" id="s1-infoPanel">
+    <h2 id="s1-bridgeName">🌉 宝带桥 <small>Baodai Bridge</small></h2>
+    <div class="info-sub" id="s1-bridgeSub">📍 苏州 · 大运河 · 唐代连拱石桥</div>
+    <div class="speech-text" id="s1-dynamicSpeech">
+        <p>🏛️ 从上方候选按钮选择模型，可拖拽/旋转/缩放观察细节。</p>
+        <p>✨ 点击模型本身进行辨识：正确模型会高亮发光，并显示详细结构信息。</p>
+        <p>🔍 每座桥的四组候选仅有一座为真迹，其余为干扰项。</p>
+    </div>
+</div>
+
+<div class="right-bottom-single">
+    <button class="custom-btn" id="s1-imgBtn">🗺️ 桥梁建模图</button>
+    <button class="custom-btn" id="s1-realSceneBtn">🌉 桥梁实景图</button>
+</div>
+
+<div class="status-tip" id="s1-statusTip">🏛️ 单模细观 | 拖拽旋转视角 | 点击模型辨识</div>
+<div class="instruction">🖱️ 鼠标拖拽旋转 | 右键平移 | 滚轮缩放</div>
+<div class="reset-view" id="s1-resetViewBtn">🎥 重置相机视角</div>
+
+<div id="s1-imageModal" class="modal">
+    <span class="close-modal">&times;</span>
+    <div class="modal-content">
+        <img id="s1-modalImg" src="" alt="桥梁影像" />
+        <div class="modal-caption" id="s1-modalCaption">🏮 桥梁历史影像</div>
+    </div>
+</div>
+<div class="three-toast" id="s1-toast"></div>
+</div>
+
+<!-- ============================================================
+     SECTION 3: 古桥诗韵·知识图谱  (ECharts graph)
+============================================================ -->
+<div id="sec-wp" class="page-sec">
+<div class="app-container">
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>江南桥记 · 诗画千年</h2>
+            <p>📌 点击诗人节点：背景切换为该诗人头像（完整人脸居中）；点击其他节点：背景恢复原图</p>
+            <div class="sidebar-tools">
+                <input id="bridgeSearch" class="bridge-search" type="text" placeholder="🔍 搜索节点内容">
+                <button id="resetView" class="reset-btn" type="button">重置视图</button>
+            </div>
+        </div>
+
+        <div class="sidebar-tabs">
+            <button class="tab-btn active" id="tabBridge" data-target="bridgeList">🌉 古桥名录</button>
+            <button class="tab-btn" id="tabPoet" data-target="poetList">✍️ 诗人雅集</button>
+        </div>
+
+        <div class="list-container" id="bridgeList"></div>
+        <div class="list-container hidden" id="poetList"></div>
+
+        <div style="padding: 1rem; font-size: 0.7rem; color: #ffefcf; text-align: center; border-top: 1px solid #dbb26b; background: rgba(0,0,0,0.25); flex-shrink: 0;">
+            🖌️ 图谱支持全向拖拽与缩放
+        </div>
+    </div>
+
+    <div class="graph-container">
+        <div class="graph-header">
+            🌊 全局知识图谱 | 拖拽 / 缩放 / 悬停 / 双击 / 右键
+            <div class="graph-actions">
+                <button class="graph-action" id="fitViewBtn" type="button">适配视图</button>
+                <button class="graph-action" id="clearSearchBtn" type="button">清空搜索</button>
+            </div>
+        </div>
+        <div id="chart"></div>
+        <div id="hoverTip" class="hover-tip"></div>
+    </div>
+</div>
+
+<div id="infoCard" class="info-card">
+    <button class="card-close" id="closeCard">✕</button>
+    <div id="cardBody"></div>
+</div>
+</div>
+
+<!-- ============================================================
+     SECTION 4: 古桥探幽·画境寻踪  (flip cards)
+============================================================ -->
+<div id="sec-fy" class="page-sec">
+<div class="overlay-mist"></div>
+<div class="container">
+    <div class="hero">
+        <h1>🏮 古桥探幽 · 画卷寻踪 🏮</h1>
+        <p>轻叩卡片 · 水墨化境 · 独桥雅韵</p>
+    </div>
+
+    <!-- 卡片网格 -->
+    <div class="cards-grid" id="cardsGrid"></div>
+    <footer>📜 四座江南古桥，轻叩任意卡片，画卷舒展，独桥移至左侧，尽览风华</footer>
+</div>
+
+<!-- 展开后的大卡片（左侧） -->
+<div class="expanded-card" id="expandedCard">
+    <h2 id="expandedName"></h2>
+    <div class="subhead" id="expandedSub"></div>
+    <div class="expanded-desc" id="expandedDesc"></div>
+    <div class="poem-line" id="expandedPoem"></div>
+    <button class="return-btn" id="returnFromDetail">🏮 返 回 · 重 寻 画 卷 🏮</button>
+</div>
+
+<!-- 全局返回按钮（右下） -->
+<div class="back-home-btn" id="globalReturnBtn">⟳ 返回桥林</div>
+</div>
+
+<!-- ============================================================
+     SECTION 5: 廊桥营造智慧·古建筑借鉴  (Three.js 3D)
+     GLB models: 穿斗民居 / 斗拱 / 宫殿 / 佛塔
+============================================================ -->
+<div id="sec-s2" class="page-sec">
+<div id="s2-canvas-container"></div>
+
+<div class="control-bar">
+    <div class="source-switch-bar">
+        <button class="source-btn active" data-source="folk">🏠 穿斗民居</button>
+        <button class="source-btn" data-source="dougong">🏛️ 藻井·斗拱</button>
+        <button class="source-btn" data-source="palace">👑 宫殿重檐</button>
+        <button class="source-btn" data-source="pagoda">🛕 佛塔宝顶</button>
+    </div>
+    <div class="sub-switch-bar" id="s2-dougongSubBar">
+        <button class="sub-btn" data-sub="dougong1">🔧 斗拱构件</button>
+        <button class="sub-btn" data-sub="dougong2">✨ 藻井装饰</button>
+    </div>
+</div>
+
+<div class="info-panel" id="s2-infoPanel">
+    <h2>🏠 穿斗民居 <small>土家族穿斗构架</small></h2>
+    <div class="info-sub">廊桥主体结构的智慧之源</div>
+    <div class="speech-text" id="s2-dynamicSpeech">
+        <p>廊桥的梁柱体系多采用<strong>穿斗式构架</strong>，直接借鉴了土家族传统民居。</p>
+        <p>为方便通行，工匠将民居中的中柱改为<strong>骑柱</strong>，并向外移动廊屋立柱，形成无柱通行空间。</p>
+        <p>这种结构用密集的柱子承托檩条，整体性好，抗侧力强，尤其适合多雨潮湿的南方。</p>
+        <p>🔍 <strong>点击模型</strong>可高亮观察细节，了解构件智慧。</p>
+    </div>
+    <div class="click-hint">✨ 点击模型中任意构件 → 高亮发光并显示具体说明</div>
+</div>
+
+<div class="right-bottom-single">
+    <button class="custom-btn" id="s2-dummyBtn" style="opacity:0.6; cursor:default;">📖 建筑意匠</button>
+</div>
+<div class="status-tip" id="s2-statusTip">🏛️ 古建筑借鉴 | 拖拽/旋转/缩放观察 | 点击模型高亮</div>
+<div class="instruction">🖱️ 鼠标拖拽旋转 | 右键平移 | 滚轮缩放</div>
+<div class="reset-view" id="s2-resetViewBtn">🎥 重置相机视角</div>
+<div class="three-toast" id="s2-toast"></div>
+</div>
+
+
+<!-- ============================================================
+     GLOBAL NAVIGATION CONTROLLER
+============================================================ -->
+<script>
+(function () {
+    'use strict';
+    var navBtns  = document.querySelectorAll('.global-nav .nav-btn');
+    var sections = document.querySelectorAll('.page-sec');
+
+    function showSection(secId) {
+        sections.forEach(function (s) {
+            s.classList.toggle('active', s.id === secId);
+        });
+        navBtns.forEach(function (b) {
+            b.classList.toggle('active', b.getAttribute('data-sec') === secId);
+        });
+
+        // Resize ECharts instances that may have been hidden during init
+        setTimeout(function () {
+            if (secId === 'sec-wp' && window.__wpChart)      window.__wpChart.resize();
+            if (secId === 'sec-tl') {
+                if (window.__tlDynastyChart) window.__tlDynastyChart.resize();
+                if (window.__tlCityChart)    window.__tlCityChart.resize();
+            }
+        }, 80);
+
+        history.replaceState(null, '', '#' + secId);
+    }
+
+    navBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var id = btn.getAttribute('data-sec');
+            if (id) showSection(id);
+        });
+    });
+
+    // Hash routing
+    (function () {
+        var hash = location.hash.replace('#', '');
+        var valid = ['sec-tl', 'sec-s1', 'sec-wp', 'sec-fy', 'sec-s2'];
+        if (valid.indexOf(hash) !== -1) showSection(hash);
+    })();
+
+    window.__showSection = showSection;
+})();
+</script>
+
+
+<!-- ============================================================
+     SCRIPT: 水韵江苏·古桥遗韵  (时间轴 网页.html)
+============================================================ -->
+<script>
+
+  // ========== 根据Excel完整数据构建 bridgesData ==========
+  const bridgesData = [
+    { name: "北门桥", city: "南京市", dynasty: "杨吴时期 (932年)", type: "石拱桥", length: "30米", repairs: "1次 (明代)", story: "南唐后主李煜的词中吟诵了北门桥当年皇城北门的景致。清代小说《儒林外史》第三十四回中，迟衡山、杜少卿“坐了一只凉篷船，到了北门桥，上了岸”拜访庄绍光；《红楼梦》第四十七回中“北门桥”及“一带苇塘”的描写，与袁枚诗句“北门桥转水田西，路少行人鸟渐啼”及当时地理环境吻合。明代状元焦竑家住北门桥畔。清代文人袁枚的随园位于其西侧，其诗句描写了北门桥一带的景致。民国作家张恨水曾住在唱经楼一带，以附近市井故事为原型创作长篇小说《丹凤街》。桥北唱经楼最早有楼，为明成祖仁孝皇后所建，或说始建于南唐，是李后主的忏经楼。" },
+    { name: "珍珠桥", city: "南京市", dynasty: "三国东吴时期", type: "石拱桥", length: "23米", repairs: "1次 (明代)", story: "暂无详细故事，史料待考。珍珠桥位于南京，承载三国东吴水韵记忆。" },
+    { name: "文德桥", city: "南京市", dynasty: "明代万历年间", type: "石桥（原为木桥）", length: "50米", repairs: "6次 (明代、清代)", story: "名称由来：明万历年间周太常少卿为蓄文气而建，取“武定文德”之意。建桥次年焦竑中状元，遂相袭至今。茅以升立志造桥：清光绪三十二年端午节赛龙船时文德桥坍塌，11岁的茅以升同学遇难，自此立志造坚固之桥，终成桥梁专家。歇后语：南京人至今习用“文德桥的栏杆——靠不住”源于多次桥栏倾塌事故。" },
+    { name: "长干桥", city: "南京市", dynasty: "杨吴时期", type: "五孔石拱桥", length: "98.83米", repairs: "5次 (宋代、明代、清代)", story: "李白《杂曲歌辞·长干行二首》千古流传：“郎骑竹马来，绕床弄青梅。同居长干里，两小无嫌猜。” 诗歌描绘长干桥畔青梅竹马的爱情故事，使得长干桥成为南京最具诗意的古桥之一。" },
+    { name: "朱雀桥", city: "南京市", dynasty: "东晋时期", type: "浮桥", length: "132米", repairs: "4次 (东晋、宋代)", story: "刘禹锡《乌衣巷》：“朱雀桥边野草花，乌衣巷口夕阳斜。旧时王谢堂前燕，飞入寻常百姓家。” 清人陈文述《朱雀桥》诗云：“野草溪花媚晚凉，残基犹说晋咸康。”朱雀桥承载六朝贵族兴衰之叹。" },
+    { name: "板桥", city: "南京市", dynasty: "六朝时期", type: "三孔青石板桥", length: "25米", repairs: "1次 (清代)", story: "六朝时期古桥，位于南京板桥镇，自古为交通要道，见证千年商旅往来。" },
+    { name: "铁心桥", city: "南京市", dynasty: "南宋时期（传说）", type: "石桥", length: "135米", repairs: "0次", story: "铁心桥得名于纪念南宋抗金英雄杨邦乂的民间传说。杨邦乂拒不降金，被剖心，百姓感其忠烈，称桥为“铁心桥”以彰气节。" },
+    { name: "周郎桥", city: "南京市", dynasty: "东汉末年", type: "土石桥", length: "未知", repairs: "无", story: "周瑜率军攻打建邺时遇河阻，鞭梢一指五日造桥，策马过桥时雷鸣电闪，马蹄印烙于石上。宋庆历年间修缮时蹄印仍清晰可辨。周边留吴帅墩、马场山等地名。清代刘源深诗云：“弈代勋名未消，路人犹说姓周桥。”" },
+    { name: "藏龙桥", city: "南京市", dynasty: "东汉（传说）", type: "单孔石拱桥", length: "12米", repairs: "无", story: "刘秀遭王莽追捕藏身桥洞，村姑以插花为号助其脱险。刘秀即位后封其为“插花娘娘”，赐桥名“藏龙桥”，并建藏龙寺。传说桥下蜘蛛结网掩护，村姑飞马引敌，故事在汤山地区流传至今。" },
+    { name: "龙津桥", city: "南京市", dynasty: "唐代天宝年间", type: "十八拱石木结构大桥", length: "599.76米", repairs: "2次 (宋代、明代)", story: "唐代横跨秦淮河巨桥，结构恢弘，古志称其“十八拱如卧龙”，为南京古代最长桥梁之一，商贸漕运要冲。" },
+    { name: "赛虹桥", city: "南京市", dynasty: "明代", type: "石拱桥", length: "60米", repairs: "2次 (清代)", story: "民间称“赛公桥”。沈万三儿媳与公公赌赛造桥，拿出私房钱抢工期，桥成质量更优。明末爱国文人杨龙友居桥畔，抗清殉国。故事彰显巾帼智慧与民族气节。" },
+    { name: "天生桥", city: "南京市", dynasty: "明代 (1393年)", type: "石桥", length: "34米", repairs: "0次", story: "朱元璋命李新开凿胭脂河，焚石凿河十五里，巨石横河因势成桥，鬼斧神工。后人立碑：“天雨汇集胭脂河，鬼斧神工天生桥！”为古代水利工程奇迹，万人役劳十年而成。" },
+    { name: "巡塘桥", city: "无锡市", dynasty: "元代 (1320年)", type: "单孔石拱桥", length: "17.2米", repairs: "1次 (清代)", story: "无锡古镇巡塘地标，桥畔旧为市集，商船如织，清代重修后保存至今。" },
+    { name: "清名桥", city: "无锡市", dynasty: "明代 (1571年)", type: "单孔石拱桥", length: "43.2米", repairs: "4次 (清代)", story: "康熙、乾隆多次南巡经过。民间艺人阿炳常在桥堍演奏《二泉映月》，桥畔水弄堂被誉为“江南水弄堂，运河绝版地”。" },
+    { name: "蛟桥", city: "无锡市", dynasty: "晋代 (304年)", type: "石拱桥", length: "240米", repairs: "12次 (宋代、元代)", story: "西晋周处在此斩杀河中蛟龙，为民除害。桥因典故闻名，历代文人题咏不绝，彰显勇毅精神。" },
+    { name: "玉带桥", city: "无锡市", dynasty: "清代", type: "石梁桥", length: "17米", repairs: "2次 (清代)", story: "苏东坡游善卷洞遇河无桥，村童出对“泥罱罱泥，泥鳅钻出泥罱眼”，东坡巧对“水车车水，水牛盘过水车头”，遂解玉带募捐造桥。后人感念命名“玉带桥”，文脉流传。" },
+    { name: "坨桥", city: "徐州市", dynasty: "明代", type: "石桥", length: "10米", repairs: "0次", story: "徐州乡野古桥，明代石作质朴，承载地方交通记忆。" },
+    { name: "乌衣桥", city: "常州市", dynasty: "宋代", type: "石拱桥", length: "未知", repairs: "无", story: "又名臧桥。唐代大夫臧蒿寓居，宋《祥符经》载。因多燕子或五品以上官员黑衣往来，得名“乌衣”，暗合金陵乌衣巷典故。桥畔东山亭为唐代独孤及所建名园，韦夏卿作《东山亭记》。" },
+    { name: "新坊桥", city: "常州市", dynasty: "元代 (1331年)", type: "单孔石拱桥", length: "35.2米", repairs: "6次 (宋代、明代)", story: "桥名源于宋代常州坊巷格局，“兴仁坊”“慈孝坊”分列桥西桥北。一说初唐为孝子刘子翼立孝慈坊，至孝闻名。桥身元代始建，见证千年孝道与城市变迁。" },
+    { name: "万缘桥", city: "常州市", dynasty: "宋代", type: "单孔石拱桥", length: "40米", repairs: "3次 (清代)", story: "桥联“雄震双流看帆指毗陵潮回孟渎”，桥侧有财神庙与桥神庙。明末陈圆圆幼时常随父在桥畔活动，清末钱名山词曰：“万缘桥上圆圆影，伯牙桥畔觅知音”。桥上“美人靠”石椅、防滑凹槽尽显人文关怀。" },
+    { name: "伯牙桥", city: "常州市", dynasty: "明代", type: "石梁桥", length: "未知", repairs: "无", story: "相传春秋伯牙曾在此地鼓琴遇知音，桥以“高山流水”典故命名，寄托知音文化。" },
+    { name: "望仙桥", city: "常州市", dynasty: "清代", type: "石梁桥", length: "18.4米", repairs: "3次 (清代)", story: "董永与七仙女传说核心地标。董永之子董鹤生在桥上跪盼母亲归来，故名“望仙桥”。黄梅戏《天仙配》1955年严凤英曾到访当地老槐树寻根，孝文化绵延千年。" },
+    { name: "立发桥", city: "南通市", dynasty: "宋代", type: "石桥（桥下建有拱形桥门）", length: "67.5米", repairs: "4次 (清代)", story: "古盐运咽喉，素有“三十六盐场咽喉，数十州县要道”之称，宋代建桥至今为南通盐业史活化石。" },
+    { name: "九龙桥", city: "连云港市", dynasty: "唐宋时期", type: "石拱桥", length: "33.4米", repairs: "1次 (明代)", story: "《西游记》灵感来源之一，山中九道溪流汇于桥下。清代《云台新志》载名“九龙”。香客过桥沾龙寿气，又名万寿桥。吴承恩吸收“九龙降蝎”传说入书，景致与第三十回高度契合。" },
+    { name: "若飞桥", city: "淮安市", dynasty: "明代（1415年）", type: "原为木制吊桥", length: "10米", repairs: "0次", story: "明末诗人吴伟业《清江闸》诗：“岸束穿流怒，帆迟几日程。石高三板浸，鼓急万夫争。”记录了漕运要冲之险峻。" },
+    { name: "通圣桥", city: "盐城市", dynasty: "南宋（1208年）", type: "单孔砖拱桥", length: "22-25米", repairs: "无", story: "“西溪三相”吕夷简、晏殊、范仲淹曾在此为官，桥名“通圣”寓意通往圣贤。明清考生登桥祈愿金榜题名，至今中高考学子慕名祈福。桥畔泰山禅寺，民间称“庙桥”，宋代盐运集散地遗存。" },
+    { name: "扬子桥", city: "扬州市", dynasty: "隋唐时期", type: "古桥梁", length: "未知", repairs: "0次", story: "隋炀帝于扬子津大宴百僚，置扬子宫，江段始称扬子江。唐代张祜“两三星火是瓜洲”，明代徐熥“扬子桥边酒半酣”，历代诗文记载。今扬子津街道、扬大校区皆因桥得名。" },
+    { name: "二十四桥", city: "扬州市", dynasty: "清代", type: "人行桥、石桥、拱桥", length: "24米", repairs: "无", story: "杜牧名句“二十四桥明月夜，玉人何处教吹箫”传世。姜夔《扬州慢》：“二十四桥仍在，波心荡、冷月无声。念桥边红药，年年知为谁生。”桥因诗词成为扬州最浪漫的文化符号。" },
+    { name: "黄金坝桥", city: "扬州市", dynasty: "唐代 (826年推测)", type: "坝桥", length: "未知", repairs: "无", story: "因黄金坝得名，一说筑坝时用金黄芦苇加固称“黄巾坝”，后演为黄金坝；一说吴王夫差开邗沟堆土而成。唐代王播开七里港河，桥闸共生，保障漕运。" },
+    { name: "拖板桥", city: "镇江市", dynasty: "南宋", type: "浮桥→单拱石桥", length: "35米", repairs: "4次 (元代、明代、清代)", story: "古运河上浮桥改建为石拱桥，承载镇江漕运记忆，桥畔历代为商贸码头。" },
+    { name: "丁卯桥", city: "镇江市", dynasty: "东晋时期", type: "单孔石拱桥", length: "10米", repairs: "2次 (清代)", story: "唐代诗人许浑筑别墅于丁卯桥，诗集取名《丁卯集》，陆游赞“宁媿诗人丁卯桥”。1982年出土唐代金银器950余件，龟负论语玉烛酒筹筒为国宝。明代杨一清筑石淙精舍，文人雅集圣地。" },
+    { name: "吕渎桥", city: "镇江市", dynasty: "清代", type: "石板桥", length: "15.54米", repairs: "1次 (清代)", story: "清代石板桥，保存完整，为江南水乡典型单跨石梁桥。" },
+    { name: "伏龙桥", city: "泰州市", dynasty: "五代十国时期（传说）", type: "单孔石拱桥", length: "未知", repairs: "无", story: "赵匡胤避南唐追兵藏身桥下，手托桥身救险，后称帝遂名伏龙桥。桥下大城砖留巴掌印，俗称“巴掌桥”。与接龙桥等构成泰州龙文化桥群。" },
+    { name: "思岳桥", city: "泰州市", dynasty: "南宋时期（传说）", type: "石梁桥", length: "未知", repairs: "无", story: "岳飞任通泰镇抚使，退守时百姓跪送焚香。后人感念岳武穆恩德，桥名“思岳”，《光绪靖江县志》载：“百姓匍伏桥上焚香拜送”。" },
+    { name: "通汇桥", city: "宿迁市", dynasty: "清代", type: "单孔拱形石桥", length: "12.5米", repairs: "1次 (清代)", story: "清代水利桥梁，沟通河渠，宿迁水运脉络见证。" },
+    { name: "胥浦桥", city: "扬州市", dynasty: "明代", type: "水泥三拱桥", length: "30米", repairs: "2次 (明代)", story: "伍子胥解剑渡江处，桥畔建伍子胥祠。柳永墓据《扬州府志》在桥西。郑板桥游历赋诗。南宋“胥浦桥之战”宋军三将军殉国；蒙古大汗窝阔台之子阔出被射杀于此，史称“阔出陨落”。" },
+    { name: "越城桥", city: "苏州市", dynasty: "南宋淳熙（重建）", type: "单孔石拱桥", length: "33.2米", repairs: "4次 (宋代、明代、清代)", story: "越王勾践屯兵筑越城得名。桥联“碧草平湖青山一画，波光万顷月色千秋”。农历八月十八“石湖串月”奇景，与卢沟晓月齐名。清代《姑苏繁华图》入画。" },
+    { name: "行春桥", city: "苏州市", dynasty: "南宋淳熙（重建）", type: "九孔连拱桥", length: "55.4米", repairs: "5次 (宋代、明代)", story: "行春民俗源起，九环洞桥，乾隆六次南巡必到，赋诗五首。八月十八石湖串月倾城观之，游船如织。“八月十八游石湖”成苏州盛节。" },
+    { name: "宝带桥", city: "苏州市", dynasty: "唐代元和", type: "多孔连拱石桥", length: "316.8米", repairs: "5次 (明代、清代)", story: "仙女抛玉带成桥镇湖怪传说。乾隆诗“孔五十三易疏泄，涨痕犹见与桥平”。元代善住“涛声荡夜起，并入榜歌长”。中国最长古多孔石桥，与赵州桥、卢沟桥齐名。" },
+    { name: "凤凰桥", city: "苏州市", dynasty: "南宋", type: "单孔石梁式古桥", length: "17.2米", repairs: "2次 (明代、清代)", story: "南宋太尉王皋故第前，明代王策迁建。凤凰驱鹖传说，鹖鸟为害，凤凰降临驱赶，桥雕凤凰图案。地名旺巷由“王巷”演变，寓意兴旺。" },
+    { name: "香花桥", city: "苏州市", dynasty: "南宋", type: "三孔石板梁桥", length: "16.1米", repairs: "2次 (清代)", story: "麒麟寺僧人为方便香客，用香火钱建造，故名香花桥（香火桥）。佛事用语“香花供养”，桥畔旧时寺庙香火鼎盛。" },
+    { name: "炙鱼桥", city: "苏州市", dynasty: "东汉《吴越春秋》记载", type: "花岗石质单孔拱桥", length: "18米", repairs: "1次 (清代)", story: "出自《吴越春秋》，专诸炙鱼刺吴王僚故事，桥名承载春秋刺客传奇。" },
+    { name: "钓桥", city: "苏州市", dynasty: "宋代", type: "初为木桥，后为石拱/吊桥", length: "21米", repairs: "7次 (明代、清代)", story: "宋代始建，明代改建为石台木梁吊桥，苏州护城河军事防御桥，兼水关功能。" },
+    { name: "枫桥", city: "苏州市", dynasty: "唐代（《枫桥夜泊》）", type: "单孔石拱桥", length: "39.6米", repairs: "3次 (清代)", story: "张继《枫桥夜泊》使此桥冠绝千古。高启“画桥三百映江城，诗里枫桥独有名”。明清枫桥米市为全国标准，“枫斛”成度量衡。寒山寺俞樾诗碑，抗战时仿刻护真，文脉激荡。" },
+    { name: "皋桥", city: "苏州市", dynasty: "元代", type: "单孔石拱桥", length: "18.9米", repairs: "0次", story: "原名兴福桥，俗称高桥，谐音皋桥。券石刻“元统二年”题记。第一次鸦片战争时太仓百姓持农具抗击英军，英军落荒而逃。" },
+    { name: "乐桥", city: "苏州市", dynasty: "三国吴赤乌二年", type: "单孔石拱桥", length: "40.6米", repairs: "1次 (元代)", story: "旧名“戮桥”，古代刑场，因讳改乐桥。桥畔丝行、鱼行、米市云集，民谣“吃煞观前街，看煞护龙街”。萧王庙祀萧何制律。" },
+    { name: "觅渡桥", city: "苏州市", dynasty: "元代大德二年", type: "单孔石拱桥", length: "81.3米", repairs: "2次 (明代、清代)", story: "昆山僧敬修治船霸，募捐建桥“灭渡”。明代织工葛成抗税领袖在此牺牲，百姓筑葛成墓尊为将军。神仙化客商抛青龙带成桥传说，今为觅渡桥。" },
+    { name: "山塘桥", city: "苏州市", dynasty: "唐代", type: "梁板桥", length: "10.2米", repairs: "4次 (宋代、明代)", story: "白居易筑山塘河所建，七里山塘第一桥，千年商贾云集。" },
+    { name: "望星桥", city: "苏州市", dynasty: "唐代", type: "石级拱桥", length: "5.4米", repairs: "1次 (宋代)", story: "初名“望信桥”，客船停泊处旅人盼家书，后音讹为望星桥，诗情画意。" },
+    { name: "乌鹊桥", city: "苏州市", dynasty: "春秋时期", type: "单孔石拱桥", length: "22米", repairs: "无", story: "白居易“乌鹊桥红带夕阳”，《水浒传》武松于乌鹊桥斩杀方貌。历代七夕诗常附会天上鹊桥，古韵悠长。" },
+    { name: "吴门桥", city: "苏州市", dynasty: "北宋", type: "单孔石拱桥", length: "66.3米", repairs: "6次 (宋代、明代、清代)", story: "苏州古城西南最高石拱桥，水陆要津，宋代始建宏伟。" },
+    { name: "苑桥", city: "苏州市", dynasty: "宋代《吴郡图经续记》", type: "初为石拱桥", length: "8米", repairs: "1次 (清代)", story: "宋代已载，古苑囿旁桥，历代修缮。" },
+    { name: "寿安桥", city: "苏州市", dynasty: "唐代，宋代主体建构", type: "单跨石梁桥", length: "4.4米", repairs: "1次 (清代)", story: "唐代始建，宋代石梁犹存，姑苏最古石桥之一。" },
+    { name: "垂虹桥", city: "苏州市", dynasty: "宋代庆历八年", type: "石墩木桥→连拱石桥", length: "84米", repairs: "19次 (元代、明代、清代)", story: "王安石“壮丽此无敌”，米芾“垂虹秋色满东南”，姜夔“回首烟波第四桥”。水则碑记录太湖灾情。沈周《垂虹暮色图》、文嘉《垂虹图》传世。三吴绝景，诗词400余首。" },
+    { name: "三里桥", city: "苏州市", dynasty: "元代泰定", type: "单孔石拱桥", length: "50.4米", repairs: "6次 (明代、清代)", story: "水乡典型单孔桥，元代泰定始建，屡修屡固。" },
+    { name: "思本桥", city: "苏州市", dynasty: "南宋宝祐年间", type: "单孔花岗岩石拱桥", length: "22.5米", repairs: "0次", story: "南宋古桥，原名思本，寄托儒家治国思想，花岗岩完好。" },
+    { name: "安德桥", city: "苏州市", dynasty: "唐代大历年间", type: "花岗石单孔拱桥", length: "49.8米", repairs: "4次 (明代、清代)", story: "巡按安德献银造桥传说，颜真卿《登平望桥下作》：“登桥试长望，望极与天平”。杨万里“高桥过得桅”诗赞其雄伟。" },
+    { name: "州桥", city: "苏州市", dynasty: "元代天历二年", type: "三孔石拱桥", length: "32.4米", repairs: "0次", story: "原名安福桥，三洞桥。太仓建州后因近州衙称州桥。太平军监军韩吉廷被害于此桥，承载近代风云。" },
+    { name: "五亭桥", city: "扬州市", dynasty: "清代乾隆二十二年", type: "石拱廊桥", length: "57.99米", repairs: "1次 (清代)", story: "茅以升赞：“最具艺术美的桥”。清人黄惺庵“扬州好，高跨五亭桥，面面清波涵月镜，头头空洞过云桡，夜听玉人箫。” 瘦西湖标志，中秋赏月胜境。" }
+  ];
+
+  // 以下公用逻辑（卡片、时间轴、音效、导航等）保持与原始完整功能一致
+  const allCities = [...new Set(bridgesData.map(b => b.city))].sort((a,b)=>a.localeCompare(b));
+  let currentCity = "all";
+  let dynastyChartInstance = null, rightChartInstance = null;
+
+  function getDynastyShort(dynastyStr) {
+    let str = dynastyStr.replace(/[（(].*?[）)]/g, '').trim();
+    if (str.includes("杨吴")) return "杨吴";
+    if (str.includes("三国")) return "三国";
+    if (str.includes("东晋")) return "东晋";
+    if (str.includes("唐代")) return "唐";
+    if (str.includes("宋代") || str.includes("南宋") || str.includes("北宋")) return "宋";
+    if (str.includes("元代")) return "元";
+    if (str.includes("明代")) return "明";
+    if (str.includes("清代")) return "清";
+    if (str.includes("五代")) return "五代";
+    if (str.includes("东汉") || str.includes("春秋") || str.includes("六朝") || str.includes("晋代")) return "汉晋南北朝";
+    return str.slice(0,2);
+  }
+
+  function filterBridges(city) { return city === "all" ? bridgesData : bridgesData.filter(b => b.city === city); }
+  function truncateStory(text, maxLen = 90) { if (!text) return "📖 故事整理中"; return text.length <= maxLen ? text : text.slice(0, maxLen) + "……"; }
+
+  function renderCards(city) {
+    const filtered = filterBridges(city);
+    const container = document.getElementById("bridgesContainer");
+    if (!container) return;
+    if (filtered.length === 0) { container.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px;">暂未收录该城市的古桥，后续补充 🏮</div>`; return; }
+    let html = "";
+    filtered.forEach(bridge => {
+      html += `<div class="bridge-card" data-name="${bridge.name.replace(/"/g, '&quot;')}">
+                <div class="bridge-name">${bridge.name}</div>
+                <div class="bridge-meta"><span class="badge">${bridge.city}</span><span class="badge">${bridge.type}</span><span class="badge">${bridge.dynasty}</span>${bridge.length && bridge.length !== "未知" ? `<span class="badge">📏 ${bridge.length}</span>` : ''}</div>
+                <div class="story-preview">📜 ${truncateStory(bridge.story, 88)}</div>
+                <div class="detail-hint">✨ 点击阅读完整故事 & 更多信息</div>
+              </div>`;
+    });
+    container.innerHTML = html;
+    document.querySelectorAll('.bridge-card').forEach(card => {
+      const bridgeName = card.getAttribute('data-name');
+      const bridge = bridgesData.find(b => b.name === bridgeName);
+      if (bridge) card.addEventListener('click', () => showModal(bridge));
+    });
+  }
+
+  function updateRightChart(city) {
+    const rightTitle = document.getElementById("rightChartTitle");
+    if (city === "all") {
+      rightTitle.innerHTML = "🥧 各城市古桥占比";
+      const cityMap = new Map(); bridgesData.forEach(b => cityMap.set(b.city, (cityMap.get(b.city) || 0) + 1));
+      const pieData = Array.from(cityMap.entries()).map(([name, value]) => ({ name, value }));
+      rightChartInstance.setOption({ tooltip: { trigger: 'item' }, legend: { orient: 'vertical', left: 'left', textStyle: { color: '#5e4a38' } }, series: [{ type: 'pie', radius: '55%', data: pieData, label: { show: true, formatter: '{b}: {d}%', color: '#5e4a38' }, itemStyle: { borderRadius: 8, borderColor: '#fef7e8', borderWidth: 2 } }] });
+    } else {
+      rightTitle.innerHTML = "🏗️ 桥梁类型分布 · " + city;
+      const filtered = filterBridges(city);
+      const typeMap = new Map();
+      filtered.forEach(b => { let k = b.type; if (k.includes("单孔石拱桥")) k = "单孔石拱桥"; else if (k.includes("石拱桥")) k = "石拱桥"; else if (k.includes("石梁桥")) k = "石梁桥"; else if (k.includes("浮桥")) k = "浮桥"; else if (k.includes("吊桥")) k = "吊桥"; else if (k.includes("坝桥")) k = "坝桥"; else if (k.includes("石板桥")) k = "石板桥"; else if (k.includes("连拱")) k = "多孔连拱桥"; typeMap.set(k, (typeMap.get(k) || 0) + 1); });
+      const pieData = Array.from(typeMap.entries()).map(([name, value]) => ({ name, value }));
+      rightChartInstance.setOption({ tooltip: { trigger: 'item' }, legend: { orient: 'vertical', left: 'left', textStyle: { color: '#5e4a38' }, type: 'scroll' }, series: [{ type: 'pie', radius: '55%', data: pieData, label: { show: true, formatter: '{b}: {d}%', color: '#5e4a38' }, itemStyle: { borderRadius: 8, borderColor: '#fef7e8', borderWidth: 2 } }] });
+    }
+  }
+
+  function updateCharts(city) {
+    const filtered = filterBridges(city);
+    const dynastyMap = new Map();
+    filtered.forEach(b => { const short = getDynastyShort(b.dynasty); dynastyMap.set(short, (dynastyMap.get(short) || 0) + 1); });
+    const sortedDynasties = Array.from(dynastyMap.keys()).sort((a,b)=>{ const order = ["汉晋南北朝","三国","东晋","唐","五代","宋","元","明","清","杨吴"]; let ia = order.indexOf(a), ib = order.indexOf(b); if (ia !== -1 && ib !== -1) return ia - ib; if (ia !== -1) return -1; if (ib !== -1) return 1; return a.localeCompare(b); });
+    const counts = sortedDynasties.map(d => dynastyMap.get(d));
+    if (dynastyChartInstance) dynastyChartInstance.setOption({ xAxis: { type: 'category', data: sortedDynasties, axisLabel: { rotate: 30, fontSize: 11, color: '#5f4e3a' } }, yAxis: { type: 'value', name: '数量（座）', nameTextStyle: { color: '#6f5a48' } }, series: [{ data: counts, type: 'bar', itemStyle: { borderRadius: [8,8,0,0], color: '#8f7a62' }, label: { show: true, color: '#4a3627' } }] });
+    updateRightChart(city);
+  }
+
+  function renderCityTags() {
+    const container = document.getElementById("cityTags");
+    if (!container) return;
+    let html = `<button data-city="all" class="city-tag active">🏯 全部</button>`;
+    allCities.forEach(city => html += `<button data-city="${city}" class="city-tag">${city}</button>`);
+    container.innerHTML = html;
+    document.querySelectorAll('.city-tag').forEach(tag => { tag.addEventListener('click', () => { document.querySelectorAll('.city-tag').forEach(t => t.classList.remove('active')); tag.classList.add('active'); currentCity = tag.getAttribute('data-city'); renderCards(currentCity); updateCharts(currentCity); }); });
+  }
+
+  function initCardsView() { renderCityTags(); renderCards(currentCity); if (!dynastyChartInstance) { dynastyChartInstance = echarts.init(document.getElementById("dynastyChart")); window.__tlDynastyChart = dynastyChartInstance; rightChartInstance = echarts.init(document.getElementById("cityPieChart")); window.__tlCityChart = rightChartInstance; } updateCharts(currentCity); window.addEventListener('resize', () => { dynastyChartInstance?.resize(); rightChartInstance?.resize(); }); }
+
+  function showModal(bridge) { const modal = document.getElementById("bridgeModal"); const modalBody = document.getElementById("modalBody"); modalBody.innerHTML = `<h2 style="color:#4a3627; margin-bottom: 10px;">🌉 ${bridge.name}</h2><div class="extra-info"><strong>🏛 古桥档案</strong><br>📍 ${bridge.city}<br>🏗 ${bridge.type}<br>📅 ${bridge.dynasty}<br>${bridge.length && bridge.length !== "未知" ? `📐 ${bridge.length}<br>` : ''}${bridge.repairs ? `🛠 修缮记录：${bridge.repairs}<br>` : ''}</div><div class="modal-story"><strong>📖 人文故事·诗词典故</strong><br>${bridge.story.replace(/\n/g, '<br>')}</div>`; modal.style.display = "flex"; }
+  document.getElementById("closeModal").onclick = () => document.getElementById("bridgeModal").style.display = "none";
+  window.onclick = (e) => { if (e.target === document.getElementById("bridgeModal")) document.getElementById("bridgeModal").style.display = "none"; };
+
+  // 时间轴核心逻辑（基于完整数据）
+  let timelineGroups = [], activeTimelineIndex = -1, activeBridgeName = "", audioCtx = null;
+  function getDynastySortYear(dynastyStr) { const m = dynastyStr.match(/(\d{3,4})/); if (m) return parseInt(m[1],10); if(dynastyStr.includes("唐")) return 700; if(dynastyStr.includes("宋")) return 1050; if(dynastyStr.includes("元")) return 1320; if(dynastyStr.includes("明")) return 1500; if(dynastyStr.includes("清")) return 1750; if(dynastyStr.includes("东晋")) return 350; if(dynastyStr.includes("三国")) return 250; if(dynastyStr.includes("东汉")) return 150; if(dynastyStr.includes("春秋")) return -500; return 9999; }
+  function prettyYear(dynastyStr) { const m = dynastyStr.match(/(\d{3,4})年/); if(m) return m[1]+"年"; const y = getDynastySortYear(dynastyStr); if(y<0) return "前"+Math.abs(y)+"年"; if(y===9999) return "年代待考"; return y+"年"; }
+  function buildTimelineGroups() { const map = new Map(); bridgesData.forEach(b => { const key = b.dynasty; if (!map.has(key)) map.set(key, { dynasty: b.dynasty, sortYear: getDynastySortYear(b.dynasty), yearText: prettyYear(b.dynasty), bridges: [] }); map.get(key).bridges.push(b); }); timelineGroups = Array.from(map.values()).sort((a,b)=>a.sortYear - b.sortYear).map(group => { group.bridges.sort((a,b)=>a.name.localeCompare(b.name)); return group; }); }
+  function playClickSound() { try { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); const now = audioCtx.currentTime; const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.type = "triangle"; osc.frequency.setValueAtTime(620, now); osc.frequency.exponentialRampToValueAtTime(420, now + 0.08); gain.gain.setValueAtTime(0.0001, now); gain.gain.exponentialRampToValueAtTime(0.08, now + 0.01); gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(now); osc.stop(now + 0.13); } catch(e) {} }
+  function updateTimelineStory(bridge, group) { const panel = document.getElementById("timelineStoryPanel"); const story = bridge?.story || "暂无详细故事，史料待补充。"; const title = bridge ? `🌉 ${bridge.name}` : `🧭 ${group.dynasty}`; const meta = bridge ? `${group.yearText} · ${bridge.city} · ${bridge.type}` : `${group.yearText} · 共 ${group.bridges.length} 座桥`; panel.innerHTML = `<div class="timeline-story-top"><div class="timeline-story-title">${title}</div><div class="timeline-story-meta">${meta}</div></div><div class="timeline-story-content">${story}</div>`; panel.style.animation = "none"; panel.offsetHeight; panel.style.animation = "panelIn 0.35s ease"; }
+  function centerTimelineNode(index) { const wrap = document.getElementById("timelineScroll"); const item = document.querySelector(`.timeline-item[data-index="${index}"]`); if(wrap && item) item.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" }); }
+  function setActiveTimeline(index, preferredBridgeName = "") { if(index<0||index>=timelineGroups.length) return; activeTimelineIndex = index; const group = timelineGroups[index]; let pickedBridge = null; if(preferredBridgeName) pickedBridge = group.bridges.find(b=>b.name===preferredBridgeName); if(!pickedBridge) pickedBridge = group.bridges[0]; activeBridgeName = pickedBridge?.name||""; document.querySelectorAll(".timeline-item").forEach(el=>el.classList.remove("active")); const activeItem = document.querySelector(`.timeline-item[data-index="${index}"]`); if(activeItem) activeItem.classList.add("active"); document.querySelectorAll(".bridge-link").forEach(el=>el.classList.remove("active")); if(activeBridgeName) { const activeBridgeBtn = document.querySelector(`.bridge-link[data-bridge="${CSS.escape(activeBridgeName)}"]`); if(activeBridgeBtn) activeBridgeBtn.classList.add("active"); } updateTimelineStory(pickedBridge, group); centerTimelineNode(index); playClickSound(); }
+  function renderTimeline() { buildTimelineGroups(); const container = document.getElementById("timelineItems"); if(!container) return; container.innerHTML = timelineGroups.map((group, idx) => `<div class="timeline-item" data-index="${idx}"><div class="timeline-node" data-index="${idx}" title="${group.dynasty}"></div><div class="timeline-year" data-index="${idx}">${group.yearText}</div><div class="timeline-dynasty" data-index="${idx}">${group.dynasty}</div><div class="bridge-links">${group.bridges.map(b => `<button class="bridge-link" data-index="${idx}" data-bridge="${b.name.replace(/"/g, "&quot;")}">${b.name}</button>`).join("")}</div></div>`).join(""); document.querySelectorAll(".timeline-node,.timeline-year,.timeline-dynasty").forEach(el => { el.addEventListener("click", () => setActiveTimeline(parseInt(el.getAttribute("data-index"),10))); }); document.querySelectorAll(".bridge-link").forEach(btn => { btn.addEventListener("click", () => { const index = parseInt(btn.getAttribute("data-index"),10); const bridgeName = btn.getAttribute("data-bridge"); setActiveTimeline(index, bridgeName); }); }); if(timelineGroups.length>0) setActiveTimeline(0); }
+
+  // 视图切换与音视频
+  const homeViewDiv = document.getElementById("homeView"), cardsViewDiv = document.getElementById("cardsView"), timelineViewDiv = document.getElementById("timelineView");
+  const navHome = document.getElementById("navHomeBtn"), navCards = document.getElementById("navCardsBtn"), navTimeline = document.getElementById("navTimelineBtn");
+  const homeVideo = document.getElementById("homeVideo"), soundBtn = document.getElementById("soundToggleBtn");
+  let isSoundOn = false;
+  function updateSoundButtonUI() { if(soundBtn){ soundBtn.innerHTML = isSoundOn ? "🔊 静音 · 流水清音" : "🔇 开启声音 · 聆听江南"; soundBtn.style.background = isSoundOn ? "rgba(110, 80, 50, 0.85)" : "rgba(0,0,0,0.6)"; } }
+  function toggleSound() { if(homeVideo){ homeVideo.muted = !homeVideo.muted; isSoundOn = !homeVideo.muted; updateSoundButtonUI(); if(isSoundOn && audioCtx) audioCtx.resume(); } }
+  function ensureHomeVideoPlay() { if(homeVideo) homeVideo.play().catch(()=>{ homeVideo.muted=true; homeVideo.play(); }); }
+  function showHome() { homeViewDiv.classList.remove("view-hidden"); cardsViewDiv.classList.add("view-hidden"); timelineViewDiv.classList.add("view-hidden"); [navHome,navCards,navTimeline].forEach(b=>b.classList.remove("active")); navHome.classList.add("active"); if(homeVideo){ ensureHomeVideoPlay(); homeVideo.muted = !isSoundOn; } }
+  function showCards() { cardsViewDiv.classList.remove("view-hidden"); homeViewDiv.classList.add("view-hidden"); timelineViewDiv.classList.add("view-hidden"); [navHome,navCards,navTimeline].forEach(b=>b.classList.remove("active")); navCards.classList.add("active"); if(homeVideo) homeVideo.pause(); setTimeout(()=>{ dynastyChartInstance?.resize(); rightChartInstance?.resize(); },80); }
+  function showTimeline() { timelineViewDiv.classList.remove("view-hidden"); cardsViewDiv.classList.add("view-hidden"); homeViewDiv.classList.add("view-hidden"); [navHome,navCards,navTimeline].forEach(b=>b.classList.remove("active")); navTimeline.classList.add("active"); if(homeVideo) homeVideo.pause(); setTimeout(()=>{ if(timelineGroups.length===0) renderTimeline(); else if(activeTimelineIndex>=0) centerTimelineNode(activeTimelineIndex); },80); }
+  if(soundBtn) soundBtn.addEventListener("click", toggleSound);
+  navHome.addEventListener("click", showHome); navCards.addEventListener("click", showCards); navTimeline.addEventListener("click", showTimeline);
+  initCardsView(); renderTimeline(); showHome(); ensureHomeVideoPlay();
+
+</script>
+
+
+<!-- ============================================================
+     SCRIPT: 古桥诗韵·知识图谱  (网谱.html — ECharts IIFE)
+============================================================ -->
+<script>
+
+(function() {
+    // ----------------------------------------------------
+    // 诗人头像映射（所有图片与背景2.jpg放在同一目录）
+    // ----------------------------------------------------
+    const poetAvatarFiles = {
+        "李白": "李白头像素.jpeg",
+        "刘禹锡": "刘禹锡.jpeg",
+        "陈文述": "陈文述.png",
+        "杜牧": "杜牧.jpeg",
+        "姜夔": "姜夔.png",
+        "张继": "张继.jpg",
+        "吴伟业": "吴伟业.jpeg",
+        "张祜": "张祜.png",
+        "徐熥": "徐熥.png",
+        "郭第": "郭第.png",
+        "颜真卿": "颜真卿.png",
+        "杨万里": "杨万里.jpeg",
+        "陆游": "陆游.jpg",
+        "钱载": "钱载.png",
+        "乾隆": "乾隆.jpg",
+        "善住": "善住.png",
+        "白居易": "白居易.jpeg",
+        "高启": "高启.jpg",
+        "王安石": "王安石.jpeg",
+        "米芾": "米芾.png",
+        "辛弃疾": "辛弃疾.jpeg",
+        "黄惺庵": "黄惺庵.png",
+        "刘源深": "刘源深.png",
+        "钱名山": "钱名山.webp"
+    };
+
+    const DEFAULT_BG = "背景2.jpg";
+
+    // 获取本地诗人头像完整路径（同目录）
+    function getLocalPoetImageUrl(poetName) {
+        const file = poetAvatarFiles[poetName];
+        return file ? file : null;
+    }
+
+    // 设置页面背景（通过CSS变量）
+    function setBackground(imageUrl, isPoetMode = false) {
+        document.body.style.setProperty('--bg-image', `url('${imageUrl}')`);
+        if (isPoetMode) {
+            document.body.classList.add("poet-bg-active");
+        } else {
+            document.body.classList.remove("poet-bg-active");
+        }
+    }
+
+    // 恢复默认背景（平铺纹理）
+    function setDefaultBackground() {
+        setBackground(DEFAULT_BG, false);
+    }
+
+    // 根据诗人名称切换背景（居中完整显示人脸），若图片不存在则恢复默认
+    function setPoetBackground(poetName) {
+        const imgFile = getLocalPoetImageUrl(poetName);
+        if (!imgFile) {
+            setDefaultBackground();
+            return;
+        }
+        const imgUrl = imgFile;
+        setBackground(imgUrl, true);
+        // 异步检测图片是否真实存在，若失败则回退
+        const testImg = new Image();
+        testImg.onload = () => {};
+        testImg.onerror = () => {
+            console.warn(`诗人头像加载失败: ${imgUrl}，恢复默认背景`);
+            setDefaultBackground();
+        };
+        testImg.src = imgUrl;
+    }
+
+    // 根据节点切换背景（只有诗人且拥有头像才切换）
+    function applyNodeBackground(nodeName, nodeType) {
+        if (nodeType === "poet" && poetAvatarFiles[nodeName]) {
+            setPoetBackground(nodeName);
+        } else {
+            setDefaultBackground();
+        }
+    }
+
+    // ----------------------------------------------------
+    // 以下为图谱核心数据（完整保留）
+    // ----------------------------------------------------
+    const poetBio = {
+        "李白": { life: "701年—762年", bio: "唐代浪漫主义诗仙，字太白。《长干行》“青梅竹马”成就长干桥千年意象。诗风雄奇飘逸，被誉为“诗仙”。" },
+        "刘禹锡": { life: "772年—842年", bio: "唐代文学家，诗豪。《乌衣巷》使朱雀桥成为六朝兴衰符号，怀古佳作传世。" },
+        "陈文述": { life: "1771年—1843年", bio: "清代诗人，诗风典雅。凭吊朱雀桥旧迹，为金陵留下隽永桥诗。" },
+        "杜牧": { life: "803年—852年", bio: "晚唐杰出诗人。“二十四桥明月夜，玉人何处教吹箫”令扬州桥魂牵梦萦。" },
+        "姜夔": { life: "1154年—1221年", bio: "南宋词人、音乐家。《扬州慢》“二十四桥仍在，波心荡冷月无声”写尽战后苍凉。" },
+        "张继": { life: "约715年—约779年", bio: "唐代诗人，《枫桥夜泊》让枫桥、寒山寺钟声回荡千古。" },
+        "吴伟业": { life: "1609年—1672年", bio: "明末清初诗人，诗记若飞桥漕运险要，融历史沧桑于笔端。" },
+        "张祜": { life: "约785年—849年", bio: "唐代诗人，《题金陵渡》写尽瓜洲夜色与扬子桥羁愁。" },
+        "徐熥": { life: "明代诗人", bio: "闽派诗人，《扬子桥别马季声》描绘运河送别，情深意切。" },
+        "郭第": { life: "明代诗人", bio: "诗题《出扬子桥喜见江南山色》，以清新笔触记录古渡风貌。" },
+        "颜真卿": { life: "709年—785年", bio: "唐代名臣、书法大家。《登平望桥下作》记安德桥长望胜景。" },
+        "杨万里": { life: "1127年—1206年", bio: "南宋诗人，诚斋体。过安德桥写“高桥过得桅”，清新自然。" },
+        "陆游": { life: "1125年—1210年", bio: "南宋爱国诗人，“宁愧诗人丁卯桥”将丁卯桥视为文人精神栖所，诗风豪放悲壮。" },
+        "钱载": { life: "1708年—1793年", bio: "清代画家、诗人。《葑门口号》咏觅渡桥田园风情，淡雅悠远。" },
+        "乾隆": { life: "1711年—1799年", bio: "清高宗，六下江南，为宝带桥、行春桥御题诗篇，留下帝王文踪。" },
+        "善住": { life: "元代诗僧", bio: "苏州报恩寺僧，《宝带桥》“苍龙浮夕阳”写尽长桥卧波之壮美。" },
+        "白居易": { life: "772年—846年", bio: "唐代诗人，曾任苏州刺史。“乌鹊桥红带夕阳”及“红栏三百九十桥”咏尽姑苏水城。" },
+        "高启": { life: "1336年—1374年", bio: "明初诗文三大家，乌鹊桥诗“夜来桥上吴娃过”浪漫飘逸。" },
+        "王安石": { life: "1021年—1086年", bio: "北宋改革家，文坛巨匠。作《送裴如晦宰吴江》最爱垂虹亭，寄情山水。" },
+        "米芾": { life: "1051年—1107年", bio: "北宋书画大家，“垂虹秋色满东南”誉满江南，诗书双绝。" },
+        "辛弃疾": { life: "1140年—1207年", bio: "南宋豪放词宗，“好卷垂虹千丈”气吞万里如虎，词中尽显英雄气。" },
+        "黄惺庵": { life: "清代词人", bio: "《望江南·五亭桥》“面面清波涵月影”，赞扬州五亭桥艺术之美。" },
+        "刘源深": { life: "清代诗人", bio: "诗《周郎桥》感怀三国周瑜筑桥遗迹，英雄余韵。" },
+        "钱名山": { life: "1875年—1944年", bio: "清末进士，词记“万缘桥上圆圆影”，系陈圆圆传说，哀婉动人。" }
+    };
+
+    const bridgeDetails = {
+        "长干桥": { desc: "位于南京秦淮河上，杨吴时期始建。李白《长干行》“青梅竹马，两小无猜”即发生于此。", dynasty: "杨吴时期", features: "石拱桥，长98.83米，近古市集，江南爱情地标。" },
+        "朱雀桥": { desc: "东晋浮桥，刘禹锡“朱雀桥边野草花”使之成为怀古名桥。", dynasty: "东晋", features: "秦淮河上，连接乌衣巷，六朝繁华见证。" },
+        "二十四桥": { desc: "扬州胜迹，杜牧“二十四桥明月夜”与姜夔“波心荡冷月无声”双璧辉映。", dynasty: "唐代扬名", features: "传说桥廿四，风月无边，文人雅集圣地。" },
+        "枫桥": { desc: "苏州古桥，张继《枫桥夜泊》让寒山寺钟声传唱千年。", dynasty: "唐代", features: "单孔石拱桥，大运河要津，夜泊意境冠绝。" },
+        "若飞桥": { desc: "淮安清江闸上之桥，吴伟业诗记漕运之险。", dynasty: "明代", features: "原为木吊桥，运河漕运咽喉。" },
+        "扬子桥": { desc: "古扬子津渡口，张祜、徐熥、郭第等多位诗人题咏。", dynasty: "隋唐", features: "连接瓜洲，南北要冲，送别诗摇篮。" },
+        "安德桥": { desc: "苏州平望镇，颜真卿登桥望极与天平，杨万里赞“高桥过得桅”。", dynasty: "唐代", features: "单孔花岗岩拱桥，高峻雄伟，江南水乡地标。" },
+        "丁卯桥": { desc: "镇江丹阳，因许浑别墅及诗集《丁卯集》闻名，陆游“宁愧诗人丁卯桥”。", dynasty: "东晋", features: "单孔石拱桥，文人精神地标，诗韵绵长。" },
+        "觅渡桥": { desc: "苏州灭渡桥，钱载诗绘田园风光。", dynasty: "元代", features: "单孔石拱桥，原名灭渡，江南清幽之境。" },
+        "宝带桥": { desc: "苏州澹台湖，五十三孔长桥，乾隆、善住赋诗。", dynasty: "唐代", features: "多孔连拱，“苍龙浮夕阳”，中国长桥典范。" },
+        "乌鹊桥": { desc: "苏州古桥，白居易、高启多次吟咏，“乌鹊桥红带夕阳”。", dynasty: "春秋", features: "单孔石拱桥，红栏风貌，姑苏浪漫象征。" },
+        "垂虹桥": { desc: "吴江垂虹，王安石、米芾、辛弃疾、姜夔争相题咏，“垂虹秋色满东南”。", dynasty: "宋代", features: "石墩木桥，后改连拱，三吴绝景。" },
+        "五亭桥": { desc: "扬州瘦西湖，茅以升赞“最具艺术美”，黄惺庵“面面清波涵月影”。", dynasty: "清代", features: "石拱廊桥，五亭临波，中国园林桥典范。" },
+        "行春桥": { desc: "苏州石湖，乾隆南巡屡游，作《石湖霁景》。", dynasty: "南宋", features: "九孔连拱，石湖串月胜景。" },
+        "周郎桥": { desc: "江宁周郎桥，三国周瑜筑桥传说，刘源深诗“路人犹说姓周桥”。", dynasty: "东汉", features: "土石桥，英雄遗迹。" },
+        "万缘桥": { desc: "常州奔牛，钱名山词记陈圆圆幼时影踪。", dynasty: "宋代", features: "单孔石拱桥，美人靠石椅，传奇流韵。" }
+    };
+
+    const poemDetails = {
+        "《长干行》": { full: "妾发初覆额，折花门前剧。郎骑竹马来，绕床弄青梅。同居长干里，两小无嫌猜。……相迎不道远，直至长风沙。(节选精华)", author: "李白", background: "李白初游金陵，描绘长干里船民爱情，成千古绝唱。" },
+        "《乌衣巷》": { full: "朱雀桥边野草花，乌衣巷口夕阳斜。旧时王谢堂前燕，飞入寻常百姓家。", author: "刘禹锡", background: "金陵怀古，感六朝兴废。" },
+        "《朱雀桥》": { full: "野草溪花媚晚凉，残基犹说晋咸康；镇注桥北无遗址，何处当年廿四航？", author: "陈文述", background: "清代凭吊东晋朱雀航遗迹。" },
+        "《寄扬州韩绰判官》": { full: "青山隐隐水迢迢，秋尽江南草未凋。二十四桥明月夜，玉人何处教吹箫。", author: "杜牧", background: "思念扬州友人，风月无边。" },
+        "《扬州慢》": { full: "淮左名都，竹西佳处……二十四桥仍在，波心荡、冷月无声。", author: "姜夔", background: "宋孝宗淳熙三年，姜夔过扬州，感金兵劫后萧条。" },
+        "《枫桥夜泊》": { full: "月落乌啼霜满天，江枫渔火对愁眠。姑苏城外寒山寺，夜半钟声到客船。", author: "张继", background: "安史之乱后羁旅苏州秋夜。" },
+        "《清江闸》": { full: "岸束穿流怒，帆迟几日程。石高三板浸，鼓急万夫争。", author: "吴伟业", background: "明末清初，记漕运险要。" },
+        "《题金陵渡》": { full: "金陵津渡小山楼，一宿行人自可愁。潮落夜江斜月里，两三星火是瓜洲。", author: "张祜", background: "羁旅金陵渡口，愁望瓜洲。" },
+        "《扬子桥别马季声》": { full: "秋风摇落满征帆，扬子桥边酒半酣。一棹芜城君独往，月明今夜我江南。", author: "徐熥", background: "明代送别之作。" },
+        "《出扬子桥喜见江南山色》": { full: "小艇淮南道，经过无限情。可怜扬子渡，不见海潮生。", author: "郭第", background: "过扬子桥喜见山色。" },
+        "《登平望桥下作》": { full: "登桥试长望，望极与天平。际海蒹葭色，终朝凫雁声。", author: "颜真卿", background: "唐代赴湖州刺史任，登平望桥。" },
+        "《过平望三首》": { full: "小麦田田种，垂杨岸岸栽。风从平望住，雨傍下塘来。高桥过得桅。", author: "杨万里", background: "南宋过平望，赞安德桥之高。" },
+        "《小筑》": { full: "小筑湖边避俗嚣……宁愧诗人丁卯桥？", author: "陆游", background: "晚年仰慕许浑，以丁卯桥自喻。" },
+        "《读许浑诗》": { full: "丁卯桥应胜午桥。", author: "陆游", background: "评价许浑与丁卯桥文化地位。" },
+        "《葑门口号三首·其一》": { full: "灭渡桥回柳映塘，南风吹郭不胜香。", author: "钱载", background: "清代苏州觅渡桥田园风光。" },
+        "《过宝带桥有咏》": { full: "金阊清晓放舟行，宝带春风波漾轻。孔五十三易疏泄。", author: "乾隆", background: "乾隆南巡过宝带桥。" },
+        "《宝带桥》": { full: "运得他山石，还将石作梁。直从堤上去，横跨水中央。白鹭下秋色，苍龙浮夕阳。", author: "善住", background: "元代诗僧咏宝带桥长虹卧波。" },
+        "《登阊门闲望》": { full: "阖闾城碧铺秋草，乌鹊桥红带夕阳。", author: "白居易", background: "白居易苏州刺史任上登阊门远眺。" },
+        "《正月三日闲行》": { full: "绿浪东西南北水，红栏三百九十桥。", author: "白居易", background: "春日闲行苏州水城。" },
+        "《乌鹊桥诗》": { full: "乌鹊南飞月自明，恨通银河水盈盈。夜来桥上吴娃过，只道天边织女行。", author: "高启", background: "浪漫写意乌鹊桥。" },
+        "《送裴如晦宰吴江》": { full: "他时散发处，最爱垂虹亭。", author: "王安石", background: "送别友人，寄情垂虹桥。" },
+        "《垂虹亭》": { full: "好作新诗寄桑苎，垂虹秋色满东南。", author: "米芾", background: "游吴江垂虹桥，秋色绝唱。" },
+        "《水调歌头》": { full: "好卷垂虹千丈，只放冰壶一色。", author: "辛弃疾", background: "和友人吴江观雪，忆垂虹桥。" },
+        "《过垂虹》": { full: "自作新词韵最娇，小红低唱我吹箫。曲终过尽松陵路，回首烟波十四桥。", author: "姜夔", background: "除夕携小红过垂虹桥。" },
+        "《望江南·五亭桥》": { full: "面面清波涵月影，头头空洞过云桡。夜听玉人箫。", author: "黄惺庵", background: "清代词人赞五亭桥艺术美。" },
+        "《石湖霁景》": { full: "吴中多雨难逢霁，霁则江山益佳丽。", author: "乾隆", background: "乾隆南巡石湖行春桥。" },
+        "《周郎桥》": { full: "弈代勋名未消，路人犹说姓周桥。", author: "刘源深", background: "感三国周郎桥遗迹。" },
+        "《摸鱼儿》": { full: "万缘桥上圆圆影，伯牙桥畔觅知音。", author: "钱名山", background: "记陈圆圆传说于万缘桥。" }
+    };
+
+    const dynastyInfo = {
+        "唐代": "中国诗歌黄金时代，文化开放，桥梁多成诗题。",
+        "宋代": "词学鼎盛，江南经济繁荣，桥畔多文人墨迹。",
+        "元代": "诗僧善住留咏宝带桥。",
+        "明代": "高启、徐熥等诗家题桥。",
+        "清代": "帝王南巡，文人雅集，桥梁成为文化符号。",
+        "北宋": "文星璀璨，垂虹留韵。",
+        "南宋": "姜夔、陆游词中多桥影。",
+        "明末清初": "沧桑巨变，漕运诗篇。",
+        "清末": "钱名山词存掌故。"
+    };
+
+    const bridgeAssociations = {
+        "长干桥": { poets: ["李白"], poems: ["《长干行》"] },
+        "朱雀桥": { poets: ["刘禹锡", "陈文述"], poems: ["《乌衣巷》", "《朱雀桥》"] },
+        "二十四桥": { poets: ["杜牧", "姜夔"], poems: ["《寄扬州韩绰判官》", "《扬州慢》"] },
+        "枫桥": { poets: ["张继"], poems: ["《枫桥夜泊》"] },
+        "若飞桥": { poets: ["吴伟业"], poems: ["《清江闸》"] },
+        "扬子桥": { poets: ["张祜", "徐熥", "郭第"], poems: ["《题金陵渡》", "《扬子桥别马季声》", "《出扬子桥喜见江南山色》"] },
+        "安德桥": { poets: ["颜真卿", "杨万里"], poems: ["《登平望桥下作》", "《过平望三首》"] },
+        "丁卯桥": { poets: ["陆游"], poems: ["《小筑》", "《读许浑诗》"] },
+        "觅渡桥": { poets: ["钱载"], poems: ["《葑门口号三首·其一》"] },
+        "宝带桥": { poets: ["乾隆", "善住"], poems: ["《过宝带桥有咏》", "《宝带桥》"] },
+        "乌鹊桥": { poets: ["白居易", "高启"], poems: ["《登阊门闲望》", "《正月三日闲行》", "《乌鹊桥诗》"] },
+        "垂虹桥": { poets: ["王安石", "米芾", "辛弃疾", "姜夔"], poems: ["《送裴如晦宰吴江》", "《垂虹亭》", "《水调歌头》", "《过垂虹》"] },
+        "五亭桥": { poets: ["黄惺庵"], poems: ["《望江南·五亭桥》"] },
+        "行春桥": { poets: ["乾隆"], poems: ["《石湖霁景》"] },
+        "周郎桥": { poets: ["刘源深"], poems: ["《周郎桥》"] },
+        "万缘桥": { poets: ["钱名山"], poems: ["《摸鱼儿》"] }
+    };
+
+    const poetDynasty = {
+        "李白":"唐代","刘禹锡":"唐代","杜牧":"唐代","张继":"唐代","张祜":"唐代","颜真卿":"唐代","白居易":"唐代",
+        "陈文述":"清代","吴伟业":"明末清初","徐熥":"明代","郭第":"明代","钱载":"清代","乾隆":"清代","善住":"元代",
+        "高启":"明代","黄惺庵":"清代","刘源深":"清代","钱名山":"清末",
+        "姜夔":"南宋","杨万里":"南宋","陆游":"南宋","辛弃疾":"南宋","王安石":"北宋","米芾":"北宋"
+    };
+
+    const dynastyDisplay = {
+        "唐代":"唐", "北宋":"宋·北宋", "南宋":"宋·南宋", "元代":"元",
+        "明代":"明", "清代":"清", "明末清初":"明末清初", "清末":"清末"
+    };
+
+    const bridgeOrder = Object.keys(bridgeAssociations);
+    const poetOrder = Object.keys(poetBio);
+
+    // 构建图谱数据
+    let nodesMap = new Map();
+    let edgesList = [];
+
+    function addNode(name, type, extra = {}) {
+        if (!nodesMap.has(name)) nodesMap.set(name, { name, type, ...extra });
+    }
+    function addEdge(source, target) { edgesList.push({ source, target }); }
+
+    for (const [bridge, assoc] of Object.entries(bridgeAssociations)) {
+        addNode(bridge, "bridge", { symbolSize: 54 });
+        for (const poet of assoc.poets) {
+            addNode(poet, "poet", { symbolSize: 56 });
+            addEdge(bridge, poet);
+            const dyn = poetDynasty[poet];
+            if (dyn) { const dynNode = dynastyDisplay[dyn]; addNode(dynNode, "dynasty", { symbolSize: 30 }); addEdge(poet, dynNode); }
+        }
+        for (const poem of assoc.poems) {
+            addNode(poem, "poem", { symbolSize: 30 });
+            const poetForPoem = poemDetails[poem]?.author || null;
+            if (poetForPoem && nodesMap.has(poetForPoem)) addEdge(poetForPoem, poem);
+        }
+    }
+    for (const [poet, dyn] of Object.entries(poetDynasty)) {
+        if (nodesMap.has(poet)) {
+            const dynNode = dynastyDisplay[dyn];
+            addNode(dynNode, "dynasty", { symbolSize: 30 });
+            if (!edgesList.some(e => e.source === poet && e.target === dynNode)) addEdge(poet, dynNode);
+        }
+    }
+
+    const allNodes = Array.from(nodesMap.values());
+    const allEdges = edgesList;
+
+    const categories = [
+        { name: "古桥", itemStyle: { color: "#b87a4a" } },
+        { name: "诗人", itemStyle: { color: "#3f7864" } },
+        { name: "朝代", itemStyle: { color: "#b59a6b" } },
+        { name: "诗词", itemStyle: { color: "#bc8262" } }
+    ];
+
+    // 图谱节点图标：诗人使用本地图片（圆框头像）
+    function getNodeIconUrl(nodeName, nodeType) {
+        if (nodeType === "poet") {
+            const localFile = getLocalPoetImageUrl(nodeName);
+            if (localFile) return localFile;
+        }
+        return null;
+    }
+
+    const nodesForChart = allNodes.map(node => {
+        const cat = node.type === "bridge" ? 0 : node.type === "poet" ? 1 : node.type === "dynasty" ? 2 : 3;
+        let symbol = "circle";
+        let size = node.symbolSize || 32;
+        if (node.type === "bridge") {
+            symbol = "path://M8,8 L24,8 L24,24 L8,24 Z";
+        } else if (node.type === "poet") {
+            const localImg = getLocalPoetImageUrl(node.name);
+            if (localImg) {
+                symbol = "image://" + localImg;
+            } else {
+                // 降级：使用在线占位符（保证显示）
+                symbol = "image://https://ui-avatars.com/api/?name=" + encodeURIComponent(node.name) + "&background=f4e8d6&color=825e2c&font-size=0.35&size=128&rounded=true";
+            }
+            size = 62;
+        } else if (node.type === "dynasty") {
+            symbol = "rect";
+        } else if (node.type === "poem") {
+            symbol = "diamond";
+        }
+        return {
+            name: node.name,
+            category: cat,
+            symbol, symbolSize: size, symbolKeepAspect: true,
+            label: { show: true, fontSize: 11, fontWeight: node.type === "poet" ? 700 : 400 }
+        };
+    });
+    const linksForChart = allEdges.map(e => ({ source: e.source, target: e.target }));
+
+    const chartDom = document.getElementById("chart");
+    const myChart = echarts.init(chartDom);
+    window.__wpChart = myChart;
+    const cardDiv = document.getElementById("infoCard");
+    const cardBody = document.getElementById("cardBody");
+    const hoverTip = document.getElementById("hoverTip");
+    const bridgeListDiv = document.getElementById("bridgeList");
+    const poetListDiv = document.getElementById("poetList");
+    const searchInput = document.getElementById("bridgeSearch");
+    const resetViewBtn = document.getElementById("resetView");
+    const fitViewBtn = document.getElementById("fitViewBtn");
+    const clearSearchBtn = document.getElementById("clearSearchBtn");
+
+    let pinnedName = null;
+    let currentSearch = "";
+
+    const adjacency = (() => { const adj = new Map(); for (const node of allNodes) adj.set(node.name, new Set()); for (const link of linksForChart) { adj.get(link.source).add(link.target); adj.get(link.target).add(link.source); } return adj; })();
+    function collectFocusSet(centerName) { const focus = new Set([centerName]); const first = adjacency.get(centerName) || new Set(); for (const item of first) focus.add(item); for (const item of first) { for (const x of adjacency.get(item) || new Set()) focus.add(x); } return focus; }
+    function makeSeriesData(centerName) { const focusSet = centerName ? collectFocusSet(centerName) : null; return nodesForChart.map(node => { const inFocus = !focusSet || focusSet.has(node.name); const isCenter = centerName && node.name === centerName; const isPoet = node.category === 1; return { ...node, itemStyle: { opacity: focusSet ? (inFocus ? 1 : 0.12) : 1, borderWidth: isPoet ? (isCenter ? 4 : 2) : (isCenter ? 3 : 1), borderColor: isCenter ? "#ffbc6e" : (isPoet ? "#ffffff" : "#ebd5b3"), shadowBlur: isCenter ? 18 : 0, shadowColor: isCenter ? "rgba(255, 188, 110, 0.45)" : "transparent", color: isPoet ? "#ffffff" : undefined }, label: { ...node.label, show: inFocus || node.type === "bridge" || node.type === "poet", fontSize: inFocus ? 12 : 10 }, symbolSize: isPoet && inFocus ? 70 : node.symbolSize }; }); }
+    function renderChart(centerName = null) { myChart.setOption({ series: [{ data: makeSeriesData(centerName), links: linksForChart }] }, false); }
+
+    function showCard(title, contentHtml, imgUrl = null, badgeText = "") { const headerHtml = `<div class="card-header">${imgUrl ? `<div class="poet-avatar-frame"><img src="${imgUrl}" alt="${title}" onerror="this.style.opacity=0.5"></div>` : ""}<div class="card-title-wrap"><div class="card-title">${title}</div>${badgeText ? `<div class="card-badge">${badgeText}</div>` : ""}</div></div>`; cardBody.innerHTML = headerHtml + `<div class="card-content">${contentHtml}</div>`; cardDiv.classList.add("show"); }
+    function closeCard() { cardDiv.classList.remove("show"); }
+    function getNodeTypeText(name) { if (bridgeDetails[name]) return "古桥"; if (poetBio[name]) return "诗人"; if (poemDetails[name]) return "诗词"; if (dynastyInfo[name]) return "朝代"; return "节点"; }
+    function getNodeSummary(name) { if (bridgeDetails[name]) return bridgeDetails[name].features; if (poetBio[name]) return poetBio[name].bio; if (poemDetails[name]) return poemDetails[name].background; if (dynastyInfo[name]) return dynastyInfo[name]; return "点击或双击查看更多。"; }
+    function updateHoverTip(title, sub, body) { hoverTip.innerHTML = `<div class="hover-title">${title}</div><div class="hover-sub">${sub}</div><div class="hover-body">${body}</div>`; hoverTip.classList.add("show"); }
+    function hideHoverTip() { hoverTip.classList.remove("show"); }
+    function openNodeCard(name) {
+        if (bridgeDetails[name]) { const d = bridgeDetails[name]; showCard(name, `<strong>🏛️ 建桥时期：</strong> ${d.dynasty}<br><strong>📖 介绍：</strong> ${d.desc}<br><strong>✨ 特色：</strong> ${d.features}`, null, "古桥档案"); return; }
+        if (poetBio[name]) { const info = poetBio[name]; const img = getLocalPoetImageUrl(name) || ("https://ui-avatars.com/api/?name=" + encodeURIComponent(name) + "&background=f4e8d6&color=825e2c&font-size=0.35&size=128&rounded=true"); showCard(name, `<div class="card-sub">📜 ${info.life}</div><div class="poet-bio">✍️ ${info.bio}</div><div class="poet-bio" style="margin-top:6px;">🏮 代表桥作：点击相关古桥节点可查看关联</div>`, img, "诗人卷轴"); return; }
+        if (poemDetails[name]) { const p = poemDetails[name]; showCard(name, `<div><strong>✒️ 作者：</strong> ${p.author}</div><div><strong>📖 背景：</strong> ${p.background}</div><div class="poem-full"><strong>📜 全诗：</strong><br>${p.full.replace(/\n/g, "<br>")}</div>`, null, "诗词全文"); return; }
+        if (dynastyInfo[name]) { showCard(name, `<div><strong>📚 朝代风貌：</strong> ${dynastyInfo[name]}</div>`, null, "朝代视角"); return; }
+        showCard(name, `<div>📌 文人墨客，桥畔遗韵。</div>`, null, "节点详情");
+    }
+
+    function focusNode(name, openCard = false) {
+        pinnedName = name;
+        renderChart(name);
+        if (openCard) openNodeCard(name);
+        const node = allNodes.find(n => n.name === name);
+        if (node) applyNodeBackground(name, node.type);
+        else setDefaultBackground();
+    }
+
+    function resetAll() {
+        pinnedName = null;
+        currentSearch = "";
+        searchInput.value = "";
+        hideHoverTip();
+        closeCard();
+        document.querySelectorAll(".list-item-card").forEach(c => c.classList.remove("active"));
+        document.querySelectorAll(".list-item-card").forEach(c => c.classList.remove("hidden"));
+        renderChart(null);
+        myChart.dispatchAction({ type: "downplay", seriesIndex: 0 });
+        setDefaultBackground();
+        myChart.resize();
+    }
+
+    // 渲染侧边栏
+    bridgeListDiv.innerHTML = "";
+    bridgeOrder.forEach(bname => {
+        const card = document.createElement("div"); card.className = "list-item-card bridge-item";
+        card.innerHTML = `<span class="item-icon">🏮</span><span class="item-name">${bname}</span>`;
+        card.addEventListener("click", () => { document.querySelectorAll(".list-item-card").forEach(c => c.classList.remove("active")); card.classList.add("active"); focusNode(bname, true); });
+        bridgeListDiv.appendChild(card);
+    });
+    poetListDiv.innerHTML = "";
+    poetOrder.forEach(pname => {
+        const card = document.createElement("div"); card.className = "list-item-card poet-item";
+        card.innerHTML = `<span class="item-icon">📜</span><span class="item-name">${pname}</span>`;
+        card.addEventListener("click", () => { document.querySelectorAll(".list-item-card").forEach(c => c.classList.remove("active")); card.classList.add("active"); focusNode(pname, true); });
+        poetListDiv.appendChild(card);
+    });
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.addEventListener("click", function() {
+            document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+            this.classList.add("active");
+            const targetId = this.getAttribute("data-target");
+            document.querySelectorAll(".list-container").forEach(container => container.classList.add("hidden"));
+            document.getElementById(targetId).classList.remove("hidden");
+        });
+    });
+
+    // 搜索功能（保持原有逻辑，此处简化保留结构）
+    function searchAll(keyword) {
+        const kw = keyword.trim().toLowerCase();
+        currentSearch = kw;
+        const matchedBridges = new Set();
+        const matchedPoets = new Set();
+        for (const [bridge, assoc] of Object.entries(bridgeAssociations)) {
+            const bridgeHit = bridge.toLowerCase().includes(kw);
+            const poetHit = assoc.poets.some(p => p.toLowerCase().includes(kw));
+            const poemHit = assoc.poems.some(p => p.toLowerCase().includes(kw));
+            const bridgeInfo = bridgeDetails[bridge];
+            const bridgeTextHit = bridgeInfo && (bridgeInfo.desc.toLowerCase().includes(kw) || bridgeInfo.features.toLowerCase().includes(kw) || bridgeInfo.dynasty.toLowerCase().includes(kw));
+            if (!kw || bridgeHit || poetHit || poemHit || bridgeTextHit) matchedBridges.add(bridge);
+            assoc.poets.forEach(p => { if (p.toLowerCase().includes(kw)) matchedPoets.add(p); });
+        }
+        for (const p of poetOrder) if (!kw || p.toLowerCase().includes(kw) || (poetBio[p] && poetBio[p].bio.toLowerCase().includes(kw))) matchedPoets.add(p);
+        document.querySelectorAll(".bridge-item").forEach(card => { const bn = card.textContent.replace("🏮", "").trim(); card.classList.toggle("hidden", kw && !matchedBridges.has(bn)); });
+        document.querySelectorAll(".poet-item").forEach(card => { const pn = card.textContent.replace("📜", "").trim(); card.classList.toggle("hidden", kw && !matchedPoets.has(pn)); });
+        if (!kw && !pinnedName) renderChart(null);
+        else if (kw && matchedBridges.size) focusNode(Array.from(matchedBridges)[0], false);
+        else if (kw && matchedPoets.size) focusNode(Array.from(matchedPoets)[0], false);
+    }
+
+    myChart.setOption({
+        backgroundColor: "transparent", tooltip: { show: false },
+        series: [{
+            type: "graph", layout: "force", force: { repulsion: 980, edgeLength: 155, gravity: 0.08, friction: 0.1 },
+            roam: true, draggable: true, data: nodesForChart, links: linksForChart, categories,
+            label: { show: true, position: "bottom", offset: [0, 8], fontFamily: "楷体" },
+            lineStyle: { color: "#cfaa7a", width: 1.6, curveness: 0.2, opacity: 0.7 },
+            edgeSymbol: ["none", "arrow"], edgeSymbolSize: [0, 5], zoom: 0.82,
+            emphasis: { focus: "adjacency", lineStyle: { width: 3 } }
+        }]
+    });
+    renderChart(null);
+    setDefaultBackground();
+
+    // 图谱交互事件
+    myChart.on("mouseover", function(params) {
+        if (params.dataType !== "node") return;
+        updateHoverTip(params.name, getNodeTypeText(params.name), getNodeSummary(params.name));
+        if (!pinnedName) renderChart(params.name);
+    });
+    myChart.on("mouseout", function(params) {
+        if (params.dataType !== "node") return;
+        hideHoverTip();
+        if (!pinnedName) renderChart(null);
+    });
+    myChart.on("dblclick", function(params) {
+        if (params.dataType !== "node") return;
+        focusNode(params.name, true);
+    });
+    myChart.on("click", function(params) {
+        if (params.dataType !== "node") return;
+        const node = allNodes.find(n => n.name === params.name);
+        if (node) applyNodeBackground(params.name, node.type);
+        openNodeCard(params.name);
+    });
+    myChart.on("contextmenu", function(params) {
+        if (params.dataType !== "node") return;
+        params.event.event.preventDefault();
+        focusNode(params.name, true);
+        return false;
+    });
+    myChart.getZr().on("click", function(evt) { if (!evt.target) setDefaultBackground(); });
+
+    searchInput.addEventListener("input", function(e) { searchAll(e.target.value); });
+    resetViewBtn.addEventListener("click", resetAll);
+    clearSearchBtn.addEventListener("click", () => { searchInput.value = ""; resetAll(); });
+    fitViewBtn.addEventListener("click", () => { myChart.dispatchAction({ type: "restore" }); myChart.setOption({ series: [{ zoom: 0.82 }] }); });
+    cardDiv.querySelector("#closeCard").addEventListener("click", closeCard);
+    window.addEventListener("resize", () => myChart.resize());
+})();
+
+</script>
+
+
+<!-- ============================================================
+     SCRIPT: 古桥探幽·画境寻踪  (翻页.html)
+============================================================ -->
+<script>
+
+    (function() {
+        // ---------- 四桥完整数据 (图片文件名严格按照用户要求：越城桥.png, 枫桥古.png, 垂.png, 玉带.png) ----------
+        const bridgesData = [
+            {
+                id: "yuecheng",
+                name: "越城桥",
+                nameEn: "Yuecheng Bridge",
+                dynasty: "姑苏 · 明代遗韵",
+                location: "苏州 · 石湖景区",
+                desc: "越城桥坐落于石湖之上，与行春桥相望，桥畔曾为越国屯兵遗址，故名。古桥单孔拱形，桥身古拙，映照姑苏繁华图卷。",
+                story: "相传明代才子唐寅曾于桥上写生，将桥影收入《姑苏繁华图》长卷。桥畔至今保留古纤道遗迹，承载千年运河记忆。",
+                poem: "《姑苏繁华图》绘尽江南市井，越城桥畔舟楫往来，灯火绵延。文人墨客登桥望湖，叹‘石湖烟雨越城秋’。",
+                bgImage: "越城桥.png"
+            },
+            {
+                id: "fengqiao",
+                name: "枫桥",
+                nameEn: "Fengqiao Bridge",
+                dynasty: "唐代 · 寒山钟声",
+                location: "苏州 · 阊门外",
+                desc: "枫桥因张继《枫桥夜泊》而名动天下，单孔石拱桥，花岗岩筑就，桥畔铁铃关与古运河相守。",
+                story: "枫桥米市曾为全国粮价基准，文人墨客踏桥寻钟声，留下无数诗篇。桥下古运河水道蜿蜒，自古为漕运咽喉。",
+                poem: "月落乌啼霜满天，江枫渔火对愁眠。姑苏城外寒山寺，夜半钟声到客船。——张继",
+                bgImage: "枫桥古.png"
+            },
+            {
+                id: "chuihong",
+                name: "垂虹桥",
+                nameEn: "Chuihong Bridge",
+                dynasty: "宋代 · 三吴绝景",
+                location: "苏州 · 吴江",
+                desc: "垂虹桥宋代始建，原为石墩木桥，后改建连拱石桥，素有‘垂虹秋色满东南’之誉，王安石、米芾等大家题咏。",
+                story: "姜夔曾携小红雪夜过垂虹，‘曲终过尽松陵路，回首烟波十四桥’。桥畔水则碑记录太湖水位，古桥遗址犹存。",
+                poem: "垂虹秋色满东南，一蓑烟雨任平生。 —— 米芾《垂虹亭》",
+                bgImage: "垂.png"
+            },
+            {
+                id: "yudai",
+                name: "玉带桥",
+                nameEn: "Yudai Bridge",
+                dynasty: "清代 · 皇家气韵",
+                location: "扬州 · 瘦西湖",
+                desc: "玉带桥为单孔石拱桥，桥身洁白如玉，形似玉带横波，桥畔绿柳成荫，极具诗情画意。",
+                story: "乾隆南巡时曾赐名‘玉带’，桥下碧波映照五亭桥，瘦西湖二十四景之一，文人雅集常于此吟咏。",
+                poem: "玉带桥边袅袅风，画船归去藕花红。 —— 清·王士禛",
+                bgImage: "玉带.png"
+            }
+        ];
+
+        // DOM 元素
+        const cardsGrid = document.getElementById("cardsGrid");
+        const expandedCardDiv = document.getElementById("expandedCard");
+        const globalReturnBtn = document.getElementById("globalReturnBtn");
+        const returnDetailBtn = document.getElementById("returnFromDetail");
+        const bodyEl = document.body;
+
+        let currentExpandedBridge = null;
+
+        // 构建卡片网格 (简洁卡片，点击直接进入详情模式)
+        function buildCards() {
+            cardsGrid.innerHTML = "";
+            bridgesData.forEach(bridge => {
+                const card = document.createElement("div");
+                card.className = "card";
+                card.setAttribute("data-id", bridge.id);
+                // 添加内容
+                card.innerHTML = `
+                    <div class="card-icon">🏮</div>
+                    <div class="card-name">${bridge.name}</div>
+                    <div class="card-sub">${bridge.dynasty} · ${bridge.location}</div>
+                    <div class="card-poem">${bridge.poem.substring(0, 38)}${bridge.poem.length > 38 ? '…' : ''}</div>
+                    <div class="flip-hint">✨ 轻叩 · 画卷徐展 ✨</div>
+                `;
+                // 单击卡片：隐藏网格，切换背景，展示左侧卡片
+                card.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    enterDetailMode(bridge);
+                });
+                cardsGrid.appendChild(card);
+            });
+        }
+
+        // 进入详情模式: 隐藏所有卡片，背景变古画，左侧展示卡片详情
+        function enterDetailMode(bridge) {
+            currentExpandedBridge = bridge;
+            // 隐藏卡片网格
+            cardsGrid.classList.add("hidden");
+            // 设置背景图片 (直接使用给定的文件名，相对路径)
+            const bgUrl = bridge.bgImage;
+            // 尝试加载真实图片，如果加载失败则保持默认纹理但给出提示（不破坏体验）
+            const testImg = new Image();
+            testImg.onload = () => {
+                bodyEl.style.backgroundImage = `url('${bgUrl}')`;
+                bodyEl.style.backgroundSize = "cover";
+                bodyEl.style.backgroundPosition = "center center";
+                bodyEl.classList.remove("default-bg");
+            };
+            testImg.onerror = () => {
+                // 如果图片不存在，仍然保留默认背景，但控制台提醒（不打断用户）
+                console.warn(`古画图片加载失败: ${bgUrl}，请确保图片与网页在同一目录`);
+                // 可以选择保留默认背景，不改变
+                bodyEl.style.backgroundImage = "";
+                bodyEl.classList.add("default-bg");
+            };
+            testImg.src = bgUrl;
+
+            // 填充左侧卡片详情
+            document.getElementById("expandedName").innerHTML = `${bridge.name}<span style="font-size:0.9rem;"> · ${bridge.nameEn}</span>`;
+            document.getElementById("expandedSub").innerHTML = `📍 ${bridge.location}  ·  ${bridge.dynasty}`;
+            document.getElementById("expandedDesc").innerHTML = `
+                <p>${bridge.desc}</p>
+                <p>📖 人文故事：${bridge.story}</p>
+            `;
+            document.getElementById("expandedPoem").innerHTML = `✍️ 诗词咏叹：<br>“${bridge.poem}”`;
+
+            // 显示左侧卡片和返回按钮
+            expandedCardDiv.classList.add("show");
+            globalReturnBtn.classList.add("show");
+        }
+
+        // 重置回网格模式
+        function resetToGrid() {
+            // 恢复卡片网格显示
+            cardsGrid.classList.remove("hidden");
+            // 隐藏左侧卡片
+            expandedCardDiv.classList.remove("show");
+            globalReturnBtn.classList.remove("show");
+            // 恢复默认背景
+            bodyEl.style.backgroundImage = "";
+            bodyEl.classList.add("default-bg");
+            currentExpandedBridge = null;
+        }
+
+        // 绑定返回事件
+        function bindReturnEvents() {
+            returnDetailBtn.addEventListener("click", resetToGrid);
+            globalReturnBtn.addEventListener("click", resetToGrid);
+        }
+
+        // 初始化
+        function init() {
+            buildCards();
+            bindReturnEvents();
+            // 保证初始背景
+            bodyEl.classList.add("default-bg");
+        }
+
+        init();
+    })();
+
+</script>
+
+
+<!-- ============================================================
+     SCRIPT: 古桥数字营造·辨识  (1.html — Three.js ES Module)
+     GLB files must be in same directory as this HTML file.
+============================================================ -->
+<script type="module">
+
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+    // 桥梁配置 (模型路径与正确索引)
+    const BRIDGES = {
+        baodai: {
+            name: "宝带桥",
+            nameEn: "Baodai Bridge",
+            sub: "📍 苏州 · 大运河 · 唐代53孔连拱石桥",
+            desc: "<p>🏛️ <strong>宝带桥</strong>，又名长桥，始建于唐元和年间（公元816年），是中国现存最长、桥孔最多的古代连拱石桥。</p><p>✨ 全长316.8米，宽4.1米，53孔连拱。采用连拱体系，各拱券推力相互抵消，桥身轻盈修长。桥址地基软弱，采用木桩基，桩头间用石块嵌紧，上建较窄的条石墩基。</p><p>🌊 第13至17孔间桥面隆起形成弓形弧线，第15孔为全桥弓形弧线的顶点。桥中部设3个大孔便于大型船舶通航。</p><p>📜 桥两端原有青石狮，桥北有石碑亭和石塔各一座，第27孔与28孔之间水盘石上也有石塔一座。</p><p>🔍 <strong>正确特征：53孔连拱、中部桥面隆起、有石塔标志、墩基窄而密。</strong></p>",
+            models: ["./错宝带桥1.glb", "./错宝带桥2.glb", "./宝带桥对比1.glb", "./宝带桥.glb"],
+            correctIndex: 3,
+            imgModel: "./宝带桥建模图.png",
+            imgReal: "./宝带桥实景.jpg"
+        },
+        fengqiao: {
+            name: "枫桥",
+            nameEn: "Fengqiao Bridge",
+            sub: "📍 苏州 · 寒山寺旁 · 唐代单孔石拱桥",
+            desc: "<p>🍁 <strong>枫桥</strong>，单孔石拱桥，花岗石构筑。桥面中部高起为平面，两端阶梯式坡道（西坡28级，东坡30级）。</p><p>🏛️ 侧墙料石砌筑，单层仰天石金边线，节间式石栏杆(每侧6根望柱，5段栏板)。拱碹半圆形纵联分段并列结构，拱眉凸出，桥额镌“重建枫桥”。</p><p>📐 因张继《枫桥夜泊》而名扬天下。</p><p>🔍 <strong>正确特征：望柱6根、拱眉凸出、桥额“重建枫桥”、台阶分明。</strong></p>",
+            models: ["./错枫桥2.glb", "./错枫桥1.glb", "./错误桥.glb", "./枫桥.glb"],
+            correctIndex: 3,
+            imgModel: "./枫桥.png",
+            imgReal: "./枫桥实景.jpg"
+        },
+        wuting: {
+            name: "五亭桥",
+            nameEn: "Wuting Bridge",
+            sub: "📍 扬州 · 瘦西湖 · 清代莲花桥",
+            desc: "<p>🏯 <strong>五亭桥</strong>，青条石砌筑，正桥平面呈“工”字形，南北两引桥下各为半拱，桥墩列四翼，共十五个桥洞。</p><p>🎨 上建五亭、下列四翼，黄瓦朱柱，配以白色栏杆，五亭临水而建，皆绿琉璃瓦顶，亭与亭之间有石梁相连。</p><p>📖 仿北京北海五龙亭和十七孔桥而建，被誉为“中国最美的桥”之一。</p><p>🔍 <strong>正确特征：五座亭子、绿琉璃瓦顶、石梁相连、十五桥洞。</strong></p>",
+            models: ["./错狼1.glb", "./错狼2.glb", "./错狼3.glb", "./狼1.glb"],
+            correctIndex: 3,
+            imgModel: "./五停.png",
+            imgReal: "./五停.jpg"
+        },
+        xingchun: {
+            name: "行春桥",
+            nameEn: "Xingchun Bridge",
+            sub: "📍 苏州 · 石湖 · 九孔连拱石桥",
+            desc: "<p>🌿 <strong>行春桥</strong>，半圆拱薄墩九孔连拱石桥，自中孔至梢孔依次对称递减。拱券花岗石纵联分节并列砌置，望柱头雕蹲狮10头，各孔拱碹侧墙有龙头。</p><p>✨ 桥上台层有双层青石板金边线，桥台两侧有燕翅墙。</p><p>🔍 <strong>正确特征：九孔连拱、望柱蹲狮、龙头装饰、薄墩结构。</strong></p>",
+            models: ["./错误狮头2.glb", "./错误狮头1.glb", "./狮头1.glb", "./狮头2.glb"],
+            correctIndex: 3,
+            imgModel: "./行春桥建模.jpg",
+            imgReal: "./青春桥.jpg"
+        }
+    };
+
+    // 全局状态
+    let currentBridgeId = "baodai";
+    let currentModelIndex = 0;
+    let currentModelObject = null;
+    let hasCorrectSelected = false;
+    let originalMaterialProps = new Map();
+
+    let scene, camera, renderer, controls;
+    let raycaster = new THREE.Raycaster();
+    let mouse = new THREE.Vector2();
+
+    // DOM 元素
+    const bridgeBtns = {
+        baodai: document.getElementById("btn-baodai"),
+        fengqiao: document.getElementById("btn-fengqiao"),
+        wuting: document.getElementById("btn-wuting"),
+        xingchun: document.getElementById("btn-xingchun")
+    };
+    const modelBtns = document.querySelectorAll(".model-btn");
+    const resetViewBtn = document.getElementById("s1-resetViewBtn");
+    const imgBtn = document.getElementById("s1-imgBtn");
+    const realSceneBtn = document.getElementById("s1-realSceneBtn");
+    const modal = document.getElementById("s1-imageModal");
+    const modalImg = document.getElementById("s1-modalImg");
+    const modalCaption = document.getElementById("s1-modalCaption");
+    const closeModal = document.querySelector(".close-modal");
+    const statusTip = document.getElementById("s1-statusTip");
+
+    // 显示临时提示
+    let toastTimeout = null;
+    function showToast(message, isError = false) {
+        // 移除已有提示
+        const existingToast = document.querySelector(".toast-message");
+        if (existingToast) existingToast.remove();
+        if (toastTimeout) clearTimeout(toastTimeout);
+
+        const toast = document.createElement("div");
+        toast.className = "toast-message";
+        toast.style.backgroundColor = isError ? "rgba(58, 38, 32, 0.95)" : "rgba(31, 74, 46, 0.95)";
+        toast.style.borderLeftColor = isError ? "#d9534f" : "#5cb85c";
+        toast.innerHTML = isError ? `❌ ${message}` : `✅ ${message}`;
+        document.body.appendChild(toast);
+
+        toastTimeout = setTimeout(() => {
+            if (toast && toast.parentNode) toast.remove();
+        }, 3000);
+    }
+
+    function getBridgeConfig() {
+        return BRIDGES[currentBridgeId];
+    }
+
+    function updateUIForBridge() {
+        const cfg = getBridgeConfig();
+        document.getElementById("s1-bridgeName").innerHTML = `${cfg.name} <small>${cfg.nameEn}</small>`;
+        document.getElementById("s1-bridgeSub").innerHTML = cfg.sub;
+        hasCorrectSelected = false;
+        modelBtns.forEach((btn, idx) => {
+            if (idx === currentModelIndex) btn.classList.add("active");
+            else btn.classList.remove("active");
+        });
+        loadModelByIndex(currentModelIndex);
+    }
+
+    function highlightModel(model, colorHex, intensity) {
+        if (!model) return;
+        model.traverse((child) => {
+            if (!child.isMesh) return;
+            if (!originalMaterialProps.has(child.uuid)) {
+                const mat = child.material;
+                if (Array.isArray(mat)) {
+                    originalMaterialProps.set(child.uuid, mat.map(m => ({
+                        emissive: m.emissive ? m.emissive.getHex() : 0,
+                        emissiveIntensity: m.emissiveIntensity || 0
+                    })));
+                } else {
+                    originalMaterialProps.set(child.uuid, {
+                        emissive: mat.emissive ? mat.emissive.getHex() : 0,
+                        emissiveIntensity: mat.emissiveIntensity || 0
+                    });
+                }
+            }
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            mats.forEach(mat => {
+                mat.emissive = new THREE.Color(colorHex);
+                mat.emissiveIntensity = intensity;
+            });
+        });
+    }
+
+    function resetHighlights() {
+        if (!currentModelObject) return;
+        currentModelObject.traverse((child) => {
+            if (!child.isMesh || !originalMaterialProps.has(child.uuid)) return;
+            const orig = originalMaterialProps.get(child.uuid);
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            mats.forEach((mat, idx) => {
+                const data = Array.isArray(orig) ? orig[idx] : orig;
+                if (data) {
+                    mat.emissive = new THREE.Color(data.emissive);
+                    mat.emissiveIntensity = data.emissiveIntensity;
+                }
+            });
+        });
+    }
+
+    // 加载模型并调整相机到舒适距离
+    function loadModelByIndex(index) {
+        if (currentModelObject) {
+            scene.remove(currentModelObject);
+            currentModelObject = null;
+            originalMaterialProps.clear();
+        }
+        const cfg = getBridgeConfig();
+        const modelUrl = cfg.models[index];
+        if (!modelUrl) return;
+
+        const loader = new GLTFLoader();
+        loader.load(modelUrl, (gltf) => {
+            const model = gltf.scene;
+            model.traverse((c) => {
+                if (c.isMesh) {
+                    c.castShadow = true;
+                    c.receiveShadow = true;
+                }
+            });
+            scene.add(model);
+            currentModelObject = model;
+
+            // 计算包围盒，调整相机到合适距离
+            const box = new THREE.Box3().setFromObject(model);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const fov = camera.fov * (Math.PI / 180);
+            let distance = (maxDim / (2 * Math.tan(fov / 2))) * 2.2;
+            distance = Math.max(distance, maxDim * 1.2);
+
+            const direction = new THREE.Vector3(1, 0.6, 1).normalize();
+            camera.position.copy(center).add(direction.multiplyScalar(distance));
+            controls.target.copy(center);
+            controls.update();
+
+            resetHighlights();
+            hasCorrectSelected = false;
+
+            const isCorrectModel = (index === cfg.correctIndex);
+            if (isCorrectModel) {
+                statusTip.innerHTML = `🏛️ 当前候选 ${String.fromCharCode(65+index)} (✅ 真迹) | 点击模型高亮确认`;
+            } else {
+                statusTip.innerHTML = `🏛️ 当前候选 ${String.fromCharCode(65+index)} (⚠️ 干扰) | 点击模型尝试辨识`;
+            }
+        }, undefined, (error) => {
+            console.error("模型加载失败:", modelUrl, error);
+            const geometry = new THREE.BoxGeometry(1.2, 1.2, 1.2);
+            const material = new THREE.MeshStandardMaterial({ color: 0x9b6e42 });
+            const fallback = new THREE.Mesh(geometry, material);
+            fallback.castShadow = true;
+            scene.add(fallback);
+            currentModelObject = fallback;
+            const center = new THREE.Vector3(0, 0.8, 0);
+            controls.target.copy(center);
+            camera.position.set(2, 1.8, 3.5);
+            controls.update();
+            statusTip.innerHTML = "⚠️ 模型加载失败，使用示意方块";
+        });
+    }
+
+    // 点击模型进行辨识
+    function onModelClick(event) {
+        if (!currentModelObject) return;
+        const rect = renderer.domElement.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObject(currentModelObject, true);
+        if (intersects.length === 0) return;
+
+        const cfg = getBridgeConfig();
+        const isCorrect = (currentModelIndex === cfg.correctIndex);
+
+        if (isCorrect) {
+            if (!hasCorrectSelected) {
+                highlightModel(currentModelObject, 0xffaa66, 0.85);
+                hasCorrectSelected = true;
+            } else {
+                highlightModel(currentModelObject, 0xffaa66, 0.85);
+            }
+            showToast(`完全正确！这就是真正的${cfg.name}！`, false);
+            document.getElementById("s1-dynamicSpeech").innerHTML = cfg.desc;
+            statusTip.innerHTML = `🎉 正确辨识 ${cfg.name}！模型高亮，可继续观察。`;
+        } else {
+            let msg = `辨识错误。当前模型不是真正的${cfg.name}。`;
+            if (currentBridgeId === "baodai") msg += " 真正的宝带桥有53个连拱、中部桥面隆起、有石塔标志。";
+            else if (currentBridgeId === "fengqiao") msg += " 真正的枫桥每侧有6根望柱、拱眉凸出、桥额“重建枫桥”。";
+            else if (currentBridgeId === "wuting") msg += " 真正的五亭桥有五座亭子、绿琉璃瓦顶、十五桥洞。";
+            else msg += " 真正的行春桥有九孔连拱、望柱蹲狮、龙头装饰。";
+            showToast(msg, true);
+            statusTip.innerHTML = `❌ 辨识错误，请尝试其他候选模型。`;
+        }
+    }
+
+    function switchBridge(bridgeId) {
+        currentBridgeId = bridgeId;
+        currentModelIndex = 0;
+        Object.keys(bridgeBtns).forEach(id => {
+            if (id === bridgeId) bridgeBtns[id].classList.add("active");
+            else bridgeBtns[id].classList.remove("active");
+        });
+        modelBtns.forEach((btn, idx) => {
+            if (idx === currentModelIndex) btn.classList.add("active");
+            else btn.classList.remove("active");
+        });
+        updateUIForBridge();
+    }
+
+    function switchModel(index) {
+        if (index === currentModelIndex) return;
+        currentModelIndex = index;
+        modelBtns.forEach((btn, idx) => {
+            if (idx === index) btn.classList.add("active");
+            else btn.classList.remove("active");
+        });
+        loadModelByIndex(index);
+    }
+
+    function resetCameraToModel() {
+        if (!currentModelObject) return;
+        const box = new THREE.Box3().setFromObject(currentModelObject);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const fov = camera.fov * (Math.PI / 180);
+        let distance = (maxDim / (2 * Math.tan(fov / 2))) * 2.2;
+        distance = Math.max(distance, maxDim * 1.2);
+        const direction = new THREE.Vector3(1, 0.6, 1).normalize();
+        camera.position.copy(center).add(direction.multiplyScalar(distance));
+        controls.target.copy(center);
+        controls.update();
+    }
+
+    function bindImageButtons() {
+        imgBtn.onclick = () => {
+            const cfg = getBridgeConfig();
+            modalImg.src = cfg.imgModel;
+            modalCaption.innerText = "🗺️ " + cfg.name + " 建模图 · 营造细节";
+            modal.style.display = "flex";
+            modalImg.onerror = () => { modalImg.src = ""; modalCaption.innerText = "图片加载失败"; };
+        };
+        realSceneBtn.onclick = () => {
+            const cfg = getBridgeConfig();
+            modalImg.src = cfg.imgReal;
+            modalCaption.innerText = "📸 " + cfg.name + " 实景 · 古桥风韵";
+            modal.style.display = "flex";
+            modalImg.onerror = () => { modalImg.src = ""; modalCaption.innerText = "图片加载失败"; };
+        };
+        closeModal.onclick = () => modal.style.display = "none";
+        window.onclick = (e) => { if (e.target === modal) modal.style.display = "none"; };
+    }
+
+    function initScene() {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x030f1a);
+        scene.fog = new THREE.FogExp2(0x030f1a, 0.008);
+        camera = new THREE.PerspectiveCamera(38, window.innerWidth / (window.innerHeight - 60), 0.1, 500);
+        camera.position.set(0, 1.8, 4);
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, (window.innerHeight - 60));
+        renderer.shadowMap.enabled = true;
+        document.getElementById("s1-canvas-container").appendChild(renderer.domElement);
+
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.06;
+        controls.rotateSpeed = 1.2;
+        controls.zoomSpeed = 1.2;
+        controls.panSpeed = 0.8;
+        controls.target.set(0, 0.8, 0);
+
+        // 照明
+        const ambientLight = new THREE.AmbientLight(0x404868, 0.65);
+        scene.add(ambientLight);
+        const mainLight = new THREE.DirectionalLight(0xfff0dc, 1.3);
+        mainLight.position.set(5, 9, 4);
+        mainLight.castShadow = true;
+        scene.add(mainLight);
+        const fillLight = new THREE.PointLight(0xccaa77, 0.55);
+        fillLight.position.set(-2, 3, -3);
+        scene.add(fillLight);
+        const backRim = new THREE.PointLight(0x88aacc, 0.45);
+        backRim.position.set(0, 2.5, 5);
+        scene.add(backRim);
+        const warmFill = new THREE.PointLight(0xe6aa66, 0.4);
+        warmFill.position.set(3, 1.8, 2);
+        scene.add(warmFill);
+
+        // 粒子点缀
+        const particleCount = 600;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        for (let i = 0; i < particleCount; i++) {
+            positions[i*3] = (Math.random() - 0.5) * 28;
+            positions[i*3+1] = Math.random() * 4.5 - 0.5;
+            positions[i*3+2] = (Math.random() - 0.5) * 22;
+        }
+        geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+        const particleMat = new THREE.PointsMaterial({ color: 0xcceeff, size: 0.045, transparent: true, opacity: 0.4 });
+        const particles = new THREE.Points(geometry, particleMat);
+        scene.add(particles);
+
+        renderer.domElement.addEventListener("click", onModelClick);
+        window.addEventListener("resize", onWindowResize);
+        animate();
+    }
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / (window.innerHeight - 60);
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, (window.innerHeight - 60));
+        if (currentModelObject) resetCameraToModel();
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+    }
+
+    function bindEvents() {
+        bridgeBtns.baodai.addEventListener("click", () => switchBridge("baodai"));
+        bridgeBtns.fengqiao.addEventListener("click", () => switchBridge("fengqiao"));
+        bridgeBtns.wuting.addEventListener("click", () => switchBridge("wuting"));
+        bridgeBtns.xingchun.addEventListener("click", () => switchBridge("xingchun"));
+        modelBtns.forEach((btn, idx) => {
+            btn.addEventListener("click", () => switchModel(idx));
+        });
+        resetViewBtn.addEventListener("click", resetCameraToModel);
+        bindImageButtons();
+    }
+
+    initScene();
+    bindEvents();
+    switchBridge("baodai");
+
+</script>
+
+
+<!-- ============================================================
+     SCRIPT: 廊桥营造智慧·古建筑借鉴  (2.html — Three.js ES Module)
+     GLB files must be in same directory as this HTML file.
+============================================================ -->
+<script type="module">
+
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+    // 借鉴来源配置 (斗拱拆分为两个独立子项)
+    const SOURCES = {
+        folk: {
+            name: "穿斗民居",
+            nameEn: "Chuandou Folk House",
+            sub: "土家族穿斗构架 · 廊桥主体结构之源",
+            desc: `<p>🏠 <strong>土家族穿斗民居</strong>：廊桥的主体结构多采用穿斗式构架。为方便通行，会将民居中的中柱改为<strong>骑柱</strong>，并向外移动廊屋立柱以形成无柱通行空间。</p>
+                   <p>📐 穿斗式以柱承檩，柱间用穿枋连接，整体性好，抗风抗震。廊桥借鉴这一体系，使桥屋轻盈且坚固，历经百年风雨而不倒。</p>
+                   <p>🎯 <strong>模型展示</strong>：土家族民居的典型穿斗构架，可观察柱、枋、檩的搭接关系。</p>`,
+            models: [{ url: "./民居.glb", name: "穿斗民居构架", pos: { x: 0, y: 0, z: 0 }, scale: 1.0 }],
+            isDougong: false
+        },
+        dougong: {
+            name: "藻井·斗拱",
+            nameEn: "Caisson & Dougong",
+            sub: "斗拱构件 + 藻井装饰 · 可切换子项",
+            desc: `<p>🏛️ <strong>斗拱与藻井</strong>：中国木构建筑的核心装饰与结构元素。请使用上方子按钮切换查看「斗拱构件」或「藻井装饰」独立模型。</p>
+                   <p>🔧 斗拱：层层出挑，承托屋檐，将屋顶荷载分散传递至立柱。</p>
+                   <p>✨ 藻井：穹隆状天花，象征“天水”镇压火灾，常绘有祥云龙纹。</p>`,
+            // 子模型单独定义
+            subModels: {
+                dougong1: { url: "./斗拱1.glb", name: "斗拱构件", pos: { x: 0, y: 0, z: 0 }, scale: 1.0, desc: "🔧 斗拱构件：层层出挑，承托屋檐，将屋顶荷载传递到柱子上，兼具结构与装饰美。" },
+                dougong2: { url: "./斗拱2.glb", name: "藻井装饰", pos: { x: 0, y: 0, z: 0 }, scale: 1.0, desc: "✨ 藻井装饰：穹隆状天花，象征‘天水’镇压火灾，桥屋正中神龛上方常用小型藻井增加神圣感。" }
+            },
+            defaultSub: "dougong1",
+            isDougong: true
+        },
+        palace: {
+            name: "宫殿重檐",
+            nameEn: "Palace Double-Eave Roof",
+            sub: "重檐歇山顶 · 水口锁钥，气派非凡",
+            desc: `<p>👑 <strong>宫廷建筑</strong>：宏大的廊桥常采用“宫殿式重檐”屋顶，或建有宫殿式重檐三层廊屋，彰显宏伟气势。</p>
+                   <p>🏯 大型风雨桥（如程阳桥）在桥屋中部建造重檐歇山顶楼阁，甚至三层重檐廊屋，使整座桥如同横跨水上的宫殿，寓意“水口锁钥，气派非凡”。</p>
+                   <p>🎨 本模型展示宫殿式重檐建筑的典型轮廓与斗拱装饰。</p>`,
+            models: [{ url: "./建筑对比.glb", name: "宫殿式重檐模型", pos: { x: 0, y: 0, z: 0 }, scale: 1.0 }],
+            isDougong: false
+        },
+        pagoda: {
+            name: "佛塔宝顶",
+            nameEn: "Pagoda Finial",
+            sub: "宝塔刹杆 · 祈福镇邪 · 视觉收束",
+            desc: `<p>🛕 <strong>佛塔/宝塔</strong>：佛塔象征“功德”与“镇邪”。廊桥上的多层楼阁（魁星阁、文昌阁）顶部常装饰宝塔状刹杆或宝葫芦。</p>
+                   <p>✨ 葫芦谐音“福禄”，具有佛教/道教祈福意味；金属刹杆同时起到<strong>避雷针</strong>作用和视觉收束效果。</p>
+                   <p>🏔️ 本模型为宝塔形构件，常见于廊桥中央楼阁顶端。</p>`,
+            models: [{ url: "./宝塔.glb", name: "宝塔形刹杆", pos: { x: 0, y: 0, z: 0 }, scale: 1.0 }],
+            isDougong: false
+        }
+    };
+
+    // 当前状态
+    let currentSource = "folk";
+    let currentSub = "dougong1";     // 斗拱子项
+    let currentGroup = null;
+    let currentModelsList = [];
+    let originalMaterialProps = new Map();
+    let raycaster = new THREE.Raycaster();
+    let mouse = new THREE.Vector2();
+
+    let scene, camera, renderer, controls;
+
+    // DOM 元素
+    const sourceBtns = document.querySelectorAll(".source-btn");
+    const subBar = document.getElementById("s2-dougongSubBar");
+    const subBtns = document.querySelectorAll(".sub-btn");
+    const resetViewBtn = document.getElementById("s2-resetViewBtn");
+    const statusTipSpan = document.getElementById("s2-statusTip");
+    const dynamicSpeech = document.getElementById("s2-dynamicSpeech");
+    const panelTitle = document.querySelector("#infoPanel h2");
+    const panelSub = document.querySelector("#infoPanel .info-sub");
+
+    // 辅助: 显示临时提示
+    let toastTimeout = null;
+    function showToast(message, isHighlight = false) {
+        const existing = document.querySelector(".toast-message");
+        if (existing) existing.remove();
+        if (toastTimeout) clearTimeout(toastTimeout);
+        const toast = document.createElement("div");
+        toast.className = "toast-message";
+        toast.style.backgroundColor = isHighlight ? "rgba(31, 74, 46, 0.95)" : "rgba(0,0,0,0.85)";
+        toast.style.borderLeftColor = isHighlight ? "#ffaa66" : "#c8943e";
+        toast.innerHTML = isHighlight ? `✨ ${message}` : `ℹ️ ${message}`;
+        document.body.appendChild(toast);
+        toastTimeout = setTimeout(() => { if(toast.parentNode) toast.remove(); }, 2800);
+    }
+
+    // 重置高亮
+    function resetHighlights() {
+        if (!currentModelsList.length) return;
+        currentModelsList.forEach(model => {
+            if (!model) return;
+            model.traverse(child => {
+                if (!child.isMesh) return;
+                if (!originalMaterialProps.has(child.uuid)) return;
+                const orig = originalMaterialProps.get(child.uuid);
+                const mats = Array.isArray(child.material) ? child.material : [child.material];
+                mats.forEach((mat, idx) => {
+                    const data = Array.isArray(orig) ? orig[idx] : orig;
+                    if (data) {
+                        mat.emissive = new THREE.Color(data.emissive);
+                        mat.emissiveIntensity = data.emissiveIntensity;
+                    }
+                });
+            });
+        });
+    }
+
+    function highlightModel(model, colorHex = 0xffaa66, intensity = 0.7) {
+        if (!model) return;
+        model.traverse(child => {
+            if (!child.isMesh) return;
+            if (!originalMaterialProps.has(child.uuid)) {
+                const mat = child.material;
+                if (Array.isArray(mat)) {
+                    originalMaterialProps.set(child.uuid, mat.map(m => ({
+                        emissive: m.emissive ? m.emissive.getHex() : 0,
+                        emissiveIntensity: m.emissiveIntensity || 0
+                    })));
+                } else {
+                    originalMaterialProps.set(child.uuid, {
+                        emissive: mat.emissive ? mat.emissive.getHex() : 0,
+                        emissiveIntensity: mat.emissiveIntensity || 0
+                    });
+                }
+            }
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            mats.forEach(mat => {
+                mat.emissive = new THREE.Color(colorHex);
+                mat.emissiveIntensity = intensity;
+            });
+        });
+    }
+
+    // 通用加载单个模型（用于非斗拱类以及斗拱子项）
+    async function loadSingleModel(modelCfg, sourceCfg, extraDesc = null) {
+        if (currentGroup) {
+            scene.remove(currentGroup);
+            currentGroup = null;
+        }
+        currentModelsList = [];
+        originalMaterialProps.clear();
+
+        const group = new THREE.Group();
+        currentGroup = group;
+        scene.add(group);
+
+        const loader = new GLTFLoader();
+        return new Promise((resolve) => {
+            loader.load(modelCfg.url, (gltf) => {
+                const model = gltf.scene;
+                model.traverse(c => { if(c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
+                if (modelCfg.scale !== undefined) model.scale.set(modelCfg.scale, modelCfg.scale, modelCfg.scale);
+                model.position.set(modelCfg.pos.x, modelCfg.pos.y, modelCfg.pos.z);
+                group.add(model);
+                currentModelsList.push(model);
+
+                // 调整相机视角
+                const box = new THREE.Box3().setFromObject(model);
+                const center = box.getCenter(new THREE.Vector3());
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const fov = camera.fov * (Math.PI / 180);
+                let distance = (maxDim / (2 * Math.tan(fov / 2))) * 1.8;
+                distance = Math.max(distance, maxDim * 1.2);
+                const direction = new THREE.Vector3(1, 0.7, 1.2).normalize();
+                camera.position.copy(center).add(direction.multiplyScalar(distance));
+                controls.target.copy(center);
+                controls.update();
+
+                // 更新UI描述
+                let displayDesc = sourceCfg.desc;
+                if (extraDesc) {
+                    displayDesc = `<p>${extraDesc}</p>${sourceCfg.desc}`;
+                }
+                dynamicSpeech.innerHTML = displayDesc;
+                panelTitle.innerHTML = `${sourceCfg.name} <small>${sourceCfg.nameEn}</small>`;
+                panelSub.innerHTML = sourceCfg.sub;
+                statusTipSpan.innerHTML = `🏛️ 当前：${modelCfg.name} | 点击模型高亮观察构件细节`;
+                resetHighlights();
+                showToast(`已加载「${modelCfg.name}」，点击模型可高亮并查看说明`, false);
+                resolve();
+            }, undefined, (error) => {
+                console.error(`模型加载失败: ${modelCfg.url}`, error);
+                // 降级立方体
+                const geometry = new THREE.BoxGeometry(1.2, 1.2, 1.2);
+                const material = new THREE.MeshStandardMaterial({ color: 0xbc9a6c });
+                const fallback = new THREE.Mesh(geometry, material);
+                fallback.position.set(modelCfg.pos.x, modelCfg.pos.y, modelCfg.pos.z);
+                group.add(fallback);
+                currentModelsList.push(fallback);
+                const center = new THREE.Vector3(0, 0.5, 0);
+                controls.target.copy(center);
+                camera.position.set(2, 1.8, 3.5);
+                controls.update();
+                dynamicSpeech.innerHTML = `<p>⚠️ 模型加载失败，使用示意方块。${extraDesc || sourceCfg.desc}</p>`;
+                resolve();
+            });
+        });
+    }
+
+    // 加载斗拱子项
+    async function loadDougongSub(subKey) {
+        const sourceCfg = SOURCES.dougong;
+        const subModel = sourceCfg.subModels[subKey];
+        if (!subModel) return;
+        await loadSingleModel(subModel, sourceCfg, subModel.desc);
+        // 更新子按钮激活样式
+        subBtns.forEach(btn => {
+            const val = btn.getAttribute("data-sub");
+            if (val === subKey) btn.classList.add("active");
+            else btn.classList.remove("active");
+        });
+        currentSub = subKey;
+    }
+
+    // 加载非斗拱类主项
+    async function loadMainSource(sourceId) {
+        const cfg = SOURCES[sourceId];
+        if (!cfg || cfg.isDougong) return;
+        if (cfg.models && cfg.models.length) {
+            await loadSingleModel(cfg.models[0], cfg, null);
+        }
+    }
+
+    // 根据当前选中的来源和子项刷新场景
+    async function refreshScene() {
+        if (currentSource === "dougong") {
+            await loadDougongSub(currentSub);
+        } else {
+            await loadMainSource(currentSource);
+        }
+    }
+
+    // 切换主分类
+    function switchSource(sourceId) {
+        currentSource = sourceId;
+        // 更新主按钮样式
+        sourceBtns.forEach(btn => {
+            const val = btn.getAttribute("data-source");
+            if (val === sourceId) btn.classList.add("active");
+            else btn.classList.remove("active");
+        });
+        // 控制子栏显示/隐藏
+        if (sourceId === "dougong") {
+            subBar.classList.add("visible");
+            // 确保当前子项有效，若未定义则设为默认
+            if (!currentSub) currentSub = "dougong1";
+            refreshScene();
+        } else {
+            subBar.classList.remove("visible");
+            refreshScene();
+        }
+    }
+
+    // 斗拱子项切换
+    function switchDougongSub(subKey) {
+        if (currentSource !== "dougong") return;
+        currentSub = subKey;
+        refreshScene();
+    }
+
+    // 点击模型高亮并显示具体说明
+    function onModelClick(event) {
+        if (!currentGroup) return;
+        const rect = renderer.domElement.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+
+        const clickableObjects = [];
+        currentModelsList.forEach(model => {
+            model.traverse(child => { if(child.isMesh) clickableObjects.push(child); });
+        });
+        const intersects = raycaster.intersectObjects(clickableObjects);
+        if (intersects.length === 0) return;
+
+        const clickedMesh = intersects[0].object;
+        let parentModel = null;
+        for (let mdl of currentModelsList) {
+            if (mdl === clickedMesh || mdl.children.includes(clickedMesh) || mdl.getObjectById(clickedMesh.id)) {
+                parentModel = mdl;
+                break;
+            }
+        }
+        if (!parentModel) parentModel = clickedMesh;
+
+        resetHighlights();
+        highlightModel(parentModel, 0xffaa66, 0.8);
+
+        let detailMsg = "";
+        if (currentSource === "folk") {
+            detailMsg = "🏠 穿斗构架：柱、穿枋、檩条紧密咬合，无大梁，整体性强。廊桥将中柱改为骑柱，释放桥面空间。";
+        } else if (currentSource === "dougong") {
+            if (currentSub === "dougong1") {
+                detailMsg = "🔧 斗拱构件：层层出挑，承托屋檐，将屋顶荷载分散传递至立柱，兼具结构力学与装饰美学。";
+            } else {
+                detailMsg = "✨ 藻井装饰：穹隆状天花，象征‘天水’镇压火灾，常绘有祥云龙纹，提升桥屋神圣感。";
+            }
+        } else if (currentSource === "palace") {
+            detailMsg = "👑 重檐歇山顶：显示等级与气势。廊桥借鉴宫殿屋顶，形成‘水口锁钥’的宏伟意象。";
+        } else if (currentSource === "pagoda") {
+            detailMsg = "🛕 宝塔形刹杆：佛塔造型，寓意镇邪祈福，金属刹杆兼具避雷功能，葫芦宝顶象征福禄。";
+        }
+        showToast(detailMsg, true);
+
+        // 在信息面板临时添加解读
+        const originalHtml = dynamicSpeech.innerHTML;
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = `<div style="background:#3a2a1e; border-radius:16px; padding:6px 10px; margin-top:8px; border-left:3px solid #ffaa66;">✨ <strong>构件解读</strong>：${detailMsg}</div>`;
+        dynamicSpeech.innerHTML = originalHtml + tempDiv.innerHTML;
+        setTimeout(() => {
+            if (dynamicSpeech.innerHTML.includes(tempDiv.innerHTML)) {
+                dynamicSpeech.innerHTML = originalHtml;
+            }
+        }, 5000);
+    }
+
+    // 重置相机视角
+    function resetCameraToCenter() {
+        if (!currentGroup || currentModelsList.length === 0) return;
+        const box = new THREE.Box3();
+        currentModelsList.forEach(model => { if(model) box.expandByObject(model); });
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const fov = camera.fov * (Math.PI / 180);
+        let distance = (maxDim / (2 * Math.tan(fov / 2))) * 1.8;
+        distance = Math.max(distance, maxDim * 1.2);
+        const direction = new THREE.Vector3(1, 0.7, 1.2).normalize();
+        camera.position.copy(center).add(direction.multiplyScalar(distance));
+        controls.target.copy(center);
+        controls.update();
+        showToast("视角已重置", false);
+    }
+
+    // Three.js 初始化
+    function initScene() {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a1215);
+        scene.fog = new THREE.FogExp2(0x0a1215, 0.012);
+        camera = new THREE.PerspectiveCamera(40, window.innerWidth / (window.innerHeight - 60), 0.1, 500);
+        camera.position.set(3, 2.5, 5);
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, (window.innerHeight - 60));
+        renderer.shadowMap.enabled = true;
+        document.getElementById("s2-canvas-container").appendChild(renderer.domElement);
+
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.06;
+        controls.rotateSpeed = 1.2;
+        controls.zoomSpeed = 1.2;
+        controls.panSpeed = 0.9;
+        controls.target.set(0, 0.8, 0);
+
+        // 灯光
+        const ambientLight = new THREE.AmbientLight(0x404868, 0.6);
+        scene.add(ambientLight);
+        const mainLight = new THREE.DirectionalLight(0xfff5e0, 1.2);
+        mainLight.position.set(4, 8, 3);
+        mainLight.castShadow = true;
+        scene.add(mainLight);
+        const fillLight = new THREE.PointLight(0xccaa77, 0.5);
+        fillLight.position.set(-2, 3, -2);
+        scene.add(fillLight);
+        const backRim = new THREE.PointLight(0x88aacc, 0.4);
+        backRim.position.set(0, 2.5, 5);
+        scene.add(backRim);
+        const warmFill = new THREE.PointLight(0xe6aa66, 0.35);
+        warmFill.position.set(3, 1.5, 2);
+        scene.add(warmFill);
+
+        // 辅助网格
+        const gridHelper = new THREE.GridHelper(12, 20, 0x88aacc, 0x557799);
+        gridHelper.position.y = -1.2;
+        gridHelper.material.transparent = true;
+        gridHelper.material.opacity = 0.18;
+        scene.add(gridHelper);
+
+        // 粒子
+        const particleCount = 800;
+        const geom = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        for (let i = 0; i < particleCount; i++) {
+            positions[i*3] = (Math.random() - 0.5) * 35;
+            positions[i*3+1] = Math.random() * 5 - 1;
+            positions[i*3+2] = (Math.random() - 0.5) * 28;
+        }
+        geom.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+        const particleMat = new THREE.PointsMaterial({ color: 0xaaccff, size: 0.05, transparent: true, opacity: 0.35 });
+        const particles = new THREE.Points(geom, particleMat);
+        scene.add(particles);
+
+        renderer.domElement.addEventListener("click", onModelClick);
+        window.addEventListener("resize", onWindowResize);
+        animate();
+    }
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / (window.innerHeight - 60);
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, (window.innerHeight - 60));
+        if (currentGroup) resetCameraToCenter();
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+    }
+
+    function bindEvents() {
+        sourceBtns.forEach(btn => {
+            btn.addEventListener("click", () => {
+                const source = btn.getAttribute("data-source");
+                if (source) switchSource(source);
+            });
+        });
+        subBtns.forEach(btn => {
+            btn.addEventListener("click", () => {
+                const sub = btn.getAttribute("data-sub");
+                if (sub && currentSource === "dougong") switchDougongSub(sub);
+            });
+        });
+        resetViewBtn.addEventListener("click", resetCameraToCenter);
+    }
+
+    // 启动
+    initScene();
+    bindEvents();
+    // 默认加载穿斗民居
+    switchSource("folk");
+
+</script>
+
+
+</body>
+</html>
